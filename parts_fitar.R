@@ -29,7 +29,7 @@ save_dir = "/data/FS_human_footprint/011_data/parts/ar/"
 id_cols = c(1) # column number of ID columns
 coord_cols = c(2, 3)  # column numbers for coordinates
 data_cols = 4:23  # column numbers containing time series data
-core_num = 10 # number of cores to use
+core_num = 40 # number of cores to use
 # ____ End Setup ____
 
 # ---- output setup ----
@@ -88,13 +88,13 @@ x = raster(xmn=(strtoi(counterx)), xmx=(strtoi(counterx)+5), ymn=(strtoi(counter
 
 rast_all = rasterize(ars_csv_all[, c('Long', 'Lat')], x, ars_csv_all[, 3:24], fun=mean)
 rast_cpv = rasterize(ars_csv_cpv[, c('Long', 'Lat')], x, ars_csv_cpv[, 3:4], fun=mean)
-raterpath_all = paste("/data/FS_human_footprint/011_data/hii/v1/ar_all/tif/hii_arr_", counterx, "_", countery,".tif", sep="")    # path to data
-raterpath_cpv = paste("/data/FS_human_footprint/011_data/hii/v1/ar_coeff_pv/tif/hii_arr_", counterx, "_", countery,".tif", sep="")    # path to data
+raterpath_all = paste("/data/FS_human_footprint/011_data/hii/v1/ar_all/tif/hii_", counterx, "_", countery,".tif", sep="")    # path to data
+raterpath_cpv = paste("/data/FS_human_footprint/011_data/hii/v1/ar_coeff_pv/tif/hii_", counterx, "_", countery,".tif", sep="")    # path to data
 writeRaster(rast_all,raterpath_all,options=c('TFW=YES'), overwrite=TRUE)
 writeRaster(rast_cpv,raterpath_cpv,options=c('TFW=YES'), overwrite=TRUE)
 
 # write ar results as csv
-csvpath_all = paste("/data/FS_human_footprint/011_data/hii/v1/ar_all/csv/hii_arr_", counterx, "_", countery,".csv", sep="")    # path to data
+csvpath_all = paste("/data/FS_human_footprint/011_data/hii/v1/ar_all/csv/hii_", counterx, "_", countery,".csv", sep="")    # path to data
 write.csv(ars_csv_all, csvpath_all, row.names=FALSE)
 
 DATA_TIME = Sys.time()
