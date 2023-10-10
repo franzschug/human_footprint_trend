@@ -1,24 +1,5 @@
 #!/bin/bash
 
-# Script to check the alias output
-shopt -s expand_aliases
-#alias dforce='dforce'
-
-alias dforce=" \
-sudo docker run \
--e FORCE_CREDENTIALS=/app/credentials \
--e BOTO_CONFIG=/app/credentials/.boto \
--v $HOME:/app/credentials \
--v /data:/data \
--v /mnt:/mnt \
--v $HOME:$HOME \
--w $PWD \
--u $(id -u):$(id -g) \
--t \
---rm \
-davidfrantz/force"
-
-
 # tile annual hii data for faster io
 years=( 2001 2002 2003 2004 2005 2006 2007 2008 2009 2010 2011 2012 2013 2014 2015 2016 2017 2018 2019 2020 )
 #for i in "${years[@]}"; do
