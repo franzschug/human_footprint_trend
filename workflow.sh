@@ -13,10 +13,12 @@ TILE=FALSE
 STACK=FALSE
 
 ## Conduct pixel-wise trend analysis to time series stacks
-FITAR=TRUE
+FITAR=FALSE
 
 ## Estimate  spatial autocorrelation parameters, range and nugget
-EST_AUTOCORR_PRM=FALSE
+EST_AUTOCORR_PRM=TRUE
+
+
 
 
 POSTPROCESS=FALSE
@@ -75,8 +77,7 @@ if [ $STACK == TRUE ] ; then
 fi
 
 if [ $FITAR == TRUE ] ; then
-	#for (( COUNTERX=-180; COUNTERX<=175; COUNTERX+=5 )); do
-	for (( COUNTERX=-5; COUNTERX<=175; COUNTERX+=5 )); do
+	for (( COUNTERX=-180; COUNTERX<=175; COUNTERX+=5 )); do
 		for (( COUNTERY=90; COUNTERY>=-85; COUNTERY-=5 )); do
 			echo $COUNTERX
 			echo $COUNTERY
@@ -87,15 +88,27 @@ fi
 
 
 if [ $EST_AUTOCORR_PRM == TRUE ] ; then
-
+	# Randomly sample n tiles, n pixels per tile, and n iterations
+	sample_tiles=400  	## Number of tiles to be randomly chosen for analysis
+	n_per_tile=3000		## Number of pixels considered within each tile
+	iterations=3		## Analysis is performed n times per tile
+	
+	# Outpath for all parameter estimates
+	outFileSPCORS="/data/FS_human_footprint/011_data/parts/alls_spcors.txt"
+	outFileNUGGET="/data/FS_human_footprint/011_data/parts/alls_nuggets.txt"
+	outDirSPCORS="/data/FS_human_footprint/011_data/parts/cor/"
+	
+	# Input directories of AR estimates, residuals, and original data
+	dir='/data/FS_human_footprint/011_data/hii/v1/ar_all_4/'
+	dirstack='/data/FS_human_footprint/011_data/hii/v1/00_stack/'
+	
+	# shuf - shuffle, tail - last elements
+	ls $dir | grep .tif | shuf | tail -$sample_tiles | parallel -j 10 Rscript /data/FS_human_footprint/090_scripts/parts_fitcor.R $dir $n_per_tile $iterations $outFileSPCORS $outDirSPCORS {}
+	#Rscript /data/FS_human_footprint/090_scripts/parts_fitcor.R $dir $n_per_tile $iterations $outFileSPCORS $outDirSPCORS /data/FS_human_footprint/011_data/hii/v1/ar_all_4/hii_-95_40.tif
+	
 fi
 
-## estimate  spatial autocorrelation parameters
-#randomly select 300 ar_tiles, estimate range, of spatial autocorrelation
-#samples=400
-#dir='/data/FS_human_footprint/011_data/hii/v1/ar_all/csv/'
-#dirstack='/data/FS_human_footprint/010_raw_data/hii/v1/ts_stack/csv/'
-#ls $dir |sort -R |tail -$samples | parallel -j 40 Rscript /data/FS_human_footprint/090_scripts/parts_fitcor.R $dir {} 3
+
 #ls $dir |sort -R |tail -$samples | parallel -j 40 Rscript /data/FS_human_footprint/090_scripts/parts_estimate_nugget.R $dir $dirstack /data/FS_human_footprint/011_data/parts/alls_spcors.txt {}
 
 
