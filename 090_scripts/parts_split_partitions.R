@@ -1,10 +1,6 @@
 # Add local R library to this project
 .libPaths(unique("R_library", .libPaths()))
 
-# ---- Load remotePARTS ----
-# # Un-comment to update the package if needed
-#remotes::install_github("morrowcj/remotePARTS", dependencies = TRUE, update = "always", force = TRUE)
-
 library(remotePARTS)
 
 args = commandArgs(trailingOnly=TRUE)
