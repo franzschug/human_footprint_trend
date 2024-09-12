@@ -74,9 +74,6 @@ if [ $STACK == TRUE ] ; then
 			gdalbuildvrt -separate $WORKDIR'/011_data/hii/v1/00_stack/hii_'$COUNTERX'_'$COUNTERY'.vrt' -input_file_list $WORKDIR'/011_data/hii/v1/00_stack/list_temp.txt'
 
 			rm $WORKDIR'/011_data/hii/v1/00_stack/list_temp.txt'
-			
-			# stack to csv
-			#python3 /data/FS_human_footprint/090_scripts/merge_hii_years.py $COUNTERX $COUNTERY
 		done
 	done
 fi
@@ -99,26 +96,24 @@ if [ $EST_AUTOCORR_PRM == TRUE ] ; then
 	iterations=3		## Analysis is performed n times per tile
 	
 	# Outpath for all parameter estimates
-	outFileSPCORS="/data/FS_human_footprint/011_data/parts/alls_spcors.txt"
-	outFileNUGGET="/data/FS_human_footprint/011_data/parts/alls_nuggets.txt"
-	outDirSPCORS="/data/FS_human_footprint/011_data/parts/cor/"
+	outFileSPCORS=$WORKDIR'/011_data/parts/alls_spcors.txt'
+	outFileNUGGET=$WORKDIR'/011_data/parts/alls_nuggets.txt'
+	outDirSPCORS=$WORKDIR'/011_data/parts/cor/'
 	
 	# Input directories of AR estimates, residuals, and original data
-	dir='/data/FS_human_footprint/011_data/hii/v1/ar_all_4/'
-	dirstack='/data/FS_human_footprint/011_data/hii/v1/00_stack/'
+	dir=$WORKDIR'/011_data/hii/v1/ar_all_4/'
+	dirstack=$WORKDIR'/011_data/hii/v1/00_stack/'
 	
 	# Estiamte range parameter, shuf - shuffle, tail - last elements
-	#ls $dir | grep .tif | shuf | tail -$sample_tiles | parallel -j 10 Rscript /data/FS_human_footprint/090_scripts/parts_fitcor.R $dir $n_per_tile $iterations $outFileSPCORS $outDirSPCORS {}
-	
-	partition_size
+	#ls $dir | grep .tif | shuf | tail -$sample_tiles | parallel -j 10 Rscript $WORKDIR'/090_scripts/parts_fitcor.R' $dir $n_per_tile $iterations $outFileSPCORS $outDirSPCORS {}
 	
 	# Estimate nugget parameter
-	#ls $dir | grep .tif | shuf |tail -$sample_tiles | parallel -j 10 Rscript /data/FS_human_footprint/090_scripts/parts_estimate_nugget.R $dir $dirstack /data/FS_human_footprint/011_data/parts/alls_spcors.txt {}
-	Rscript /data/FS_human_footprint/090_scripts/parts_estimate_nugget.R '/data/FS_human_footprint/011_data/hii/v1/ar_all_4/' '/data/FS_human_footprint/011_data/hii/v1/00_stack/' /data/FS_human_footprint/011_data/parts/alls_spcors.txt hii_-95_40.tif
+	#ls $dir | grep .tif | shuf |tail -$sample_tiles | parallel -j 10 Rscript $WORKDIR'/090_scripts/parts_estimate_nugget.R' $dir $dirstack $WORKDIR'/011_data/parts/alls_spcors.txt' {}
+	Rscript $WORKDIR'/090_scripts/parts_estimate_nugget.R' $WORKDIR'/011_data/hii/v1/ar_all_4/' $WORKDIR'/011_data/hii/v1/00_stack/' $WORKDIR'/011_data/parts/alls_spcors.txt' hii_-95_40.tif
 	
 	
-	#python3 /data/FS_human_footprint/090_scripts/plots/00_distribution_range.py
-	#python3 /data/FS_human_footprint/090_scripts/plots/00_distribution_nugget.py
+	#python3 $WORKDIR'/090_scripts/plots/00_distribution_range.py'
+	#python3 $WORKDIR'/090_scripts/plots/00_distribution_nugget.py'
 fi
 
 
