@@ -115,8 +115,10 @@ if [ $EST_AUTOCORR_PRM == TRUE ] ; then
 	#ls $dir | grep .tif | shuf | tail -$sample_tiles | parallel -j 10 Rscript $WORKDIR'/090_scripts/parts_fitcor.R' $dir $n_per_tile $iterations $outFileSPCORS $outDirSPCORS {}
 	
 	# Estimate nugget parameter
-	#ls $dir | grep .tif | shuf |tail -$sample_tiles | parallel -j 10 Rscript $WORKDIR'/090_scripts/parts_estimate_nugget.R' $dir $dirstack $WORKDIR'/011_data/parts/alls_spcors.txt' {}
-	Rscript $WORKDIR'/090_scripts/parts_estimate_nugget.R' $WORKDIR'/011_data/hii/v1/ar_all_4/' $WORKDIR'/011_data/hii/v1/00_stack/' $WORKDIR'/011_data/parts/alls_spcors.txt' hii_-95_40.tif
+	nr_samples=3000
+	
+	ls $dir | grep .tif | shuf |tail -$sample_tiles | parallel -j 10 Rscript $WORKDIR'/090_scripts/parts_estimate_nugget.R' $dir $dirstack $nr_samples $WORKDIR'/011_data/parts/alls_spcors.txt' {}
+	#Rscript $WORKDIR'/090_scripts/parts_estimate_nugget.R' $WORKDIR'/011_data/hii/v1/ar_all_4/' $WORKDIR'/011_data/hii/v1/00_stack/' $WORKDIR'/011_data/parts/alls_spcors.txt' hii_-95_40.tif
 	
 	
 	#python3 $WORKDIR'/090_scripts/plots/00_distribution_range.py'
