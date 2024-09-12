@@ -22,12 +22,19 @@ EST_AUTOCORR_PRM=TRUE
 ## Merge pixel-wise trend with explanatory variables
 MERGEEXPL=FALSE
 
+## Merge pixel-wise trend with explanatory variables
+PARTITION=FALSE
+
+SPLITGLS=FALSE
+
+SPLITANALYSIS=FALSE
+
 #partition data!
 #run split parallel gls
 # split analysis
 
 POSTPROCESS=FALSE
-#Rscript $WORKDIR'/090_scripts/parts_fitar.R' $WORKDIR 0 40
+
 
 if [ $MERGEHII == TRUE ] ; then
 	years=( 2001 2002 2003 2004 2005 2006 2007 2008 2009 2010 2011 2012 2013 2014 2015 2016 2017 2018 2019 2020 )
@@ -116,9 +123,21 @@ if [ $EST_AUTOCORR_PRM == TRUE ] ; then
 	#python3 $WORKDIR'/090_scripts/plots/00_distribution_nugget.py'
 fi
 
+if [ $MERGEEXPL == TRUE ] ; then
 
+fi
 
+if [ $PARTITION == TRUE ] ; then
 
+fi
+
+if [ $SPLITGLS == TRUE ] ; then
+
+fi
+
+if [ $SPLITANALYSIS == TRUE ] ; then
+
+fi
 #MERGEEXPL 
 #- output correlation matrix, variance inflation factor test. then select!
 # write vif new - with subset of the data
