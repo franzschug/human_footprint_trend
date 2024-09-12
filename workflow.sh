@@ -19,7 +19,12 @@ FITAR=FALSE
 EST_AUTOCORR_PRM=TRUE
 
 
+## Merge pixel-wise trend with explanatory variables
+MERGEEXPL=FALSE
 
+#partition data!
+#run split parallel gls
+# split analysis
 
 POSTPROCESS=FALSE
 #Rscript $WORKDIR'/090_scripts/parts_fitar.R' $WORKDIR 0 40
@@ -102,15 +107,26 @@ if [ $EST_AUTOCORR_PRM == TRUE ] ; then
 	dir='/data/FS_human_footprint/011_data/hii/v1/ar_all_4/'
 	dirstack='/data/FS_human_footprint/011_data/hii/v1/00_stack/'
 	
-	# shuf - shuffle, tail - last elements
-	ls $dir | grep .tif | shuf | tail -$sample_tiles | parallel -j 10 Rscript /data/FS_human_footprint/090_scripts/parts_fitcor.R $dir $n_per_tile $iterations $outFileSPCORS $outDirSPCORS {}
-	#Rscript /data/FS_human_footprint/090_scripts/parts_fitcor.R $dir $n_per_tile $iterations $outFileSPCORS $outDirSPCORS /data/FS_human_footprint/011_data/hii/v1/ar_all_4/hii_-95_40.tif
+	# Estiamte range parameter, shuf - shuffle, tail - last elements
+	#ls $dir | grep .tif | shuf | tail -$sample_tiles | parallel -j 10 Rscript /data/FS_human_footprint/090_scripts/parts_fitcor.R $dir $n_per_tile $iterations $outFileSPCORS $outDirSPCORS {}
 	
+	partition_size
+	
+	# Estimate nugget parameter
+	#ls $dir | grep .tif | shuf |tail -$sample_tiles | parallel -j 10 Rscript /data/FS_human_footprint/090_scripts/parts_estimate_nugget.R $dir $dirstack /data/FS_human_footprint/011_data/parts/alls_spcors.txt {}
+	Rscript /data/FS_human_footprint/090_scripts/parts_estimate_nugget.R '/data/FS_human_footprint/011_data/hii/v1/ar_all_4/' '/data/FS_human_footprint/011_data/hii/v1/00_stack/' /data/FS_human_footprint/011_data/parts/alls_spcors.txt hii_-95_40.tif
+	
+	
+	#python3 /data/FS_human_footprint/090_scripts/plots/00_distribution_range.py
+	#python3 /data/FS_human_footprint/090_scripts/plots/00_distribution_nugget.py
 fi
 
 
-#ls $dir |sort -R |tail -$samples | parallel -j 40 Rscript /data/FS_human_footprint/090_scripts/parts_estimate_nugget.R $dir $dirstack /data/FS_human_footprint/011_data/parts/alls_spcors.txt {}
 
+
+#MERGEEXPL 
+#- output correlation matrix, variance inflation factor test. then select!
+# write vif new - with subset of the data
 
 
 
