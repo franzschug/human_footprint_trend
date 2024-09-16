@@ -126,13 +126,8 @@ if [ $EST_AUTOCORR_PRM == TRUE ] ; then
 	python3 $WORKDIR'/090_scripts/plots/00_distribution_nugget.py'
 fi
 
-#indep_dir=( '011_data/countries' '011_data/dhi' '011_data/wdpa' '011_data/ecoregions' '011_data/species_richness' '011_data/species_richness' '011_data/species_richness' '011_data/species_richness' '011_data/wui' '011_data/gdp' '011_data/gdp' '011_data/gdp' '011_data/gdp' ) 
-
-indep_dir=( '011_data/wui' '011_data/gdp' '011_data/gdp' '011_data/gdp' '011_data/gdp' ) 
-
-#indep_name=( 'countries' 'cumDHI' 'wdpa_prox' 'ecoregions' 'sumTotalMammals' 'sumTotalBirds' 'sumTotalAmphibians' 'sumTotalReptiles' 'global_wui' 'gdp_1990' 'gdp_2015' 'gdp_change' 'gdp_rel_change' ) 
-
-indep_name=( 'global_wui' 'gdp_1990' 'gdp_2015' 'gdp_change' 'gdp_rel_change' ) 
+indep_dir=( '011_data/countries' '011_data/dhi' '011_data/wdpa' '011_data/ecoregions' '011_data/species_richness' '011_data/species_richness' '011_data/species_richness' '011_data/species_richness' '011_data/wui' '011_data/gdp' '011_data/gdp' '011_data/gdp' '011_data/gdp' ) 
+indep_name=( 'countries' 'cumDHI' 'wdpa_prox' 'ecoregions' 'sumTotalMammals' 'sumTotalBirds' 'sumTotalAmphibians' 'sumTotalReptiles' 'global_wui_300' 'gdp_1990' 'gdp_2015' 'gdp_change' 'gdp_rel_change' ) 
 if [ $PREPINDEP == TRUE ] ; then
 	for (( COUNTERX=-180; COUNTERX<=175; COUNTERX+=5 )); do
 		for (( COUNTERY=90; COUNTERY>=-85; COUNTERY-=5 )); do
@@ -168,20 +163,30 @@ fi
 
 
 if [ $MERGEINDEP == TRUE ] ; then
-	for (( COUNTERX=-180; COUNTERX<=175; COUNTERX+=5 )); do
-		for (( COUNTERY=90; COUNTERY>=-85; COUNTERY-=5 )); do
+	#for (( COUNTERX=-180; COUNTERX<=175; COUNTERX+=5 )); do
+	for (( COUNTERX=-95; COUNTERX<=-90; COUNTERX+=5 )); do
+		#for (( COUNTERY=90; COUNTERY>=-85; COUNTERY-=5 )); do
+		for (( COUNTERY=50; COUNTERY>=40; COUNTERY-=5 )); do
 			echo $COUNTERX
 			echo $COUNTERY
-			temp=("${indep_var[@]}")
-			temp=( "${temp[@]/%/"$COUNTERX"_"$COUNTERY".vrt}" )
-			temp=( "${temp[@]/#/"$WORKDIR"}" )
-			#printf '%s ' "${temp[@]}"
-			printf "${temp[*]}"
-
-			#gdal_merge.py -o 'data/FS_human_footprint/data/FS_human_footprint/011_data/hii/v1/merged_ar_ind/hii_-95_40_ind.tif' -co "COMPRESS=LZW" -separate "${temp[@]}"
-			#gdal_merge.py -o $WORKDIR'/data/FS_human_footprint/011_data/hii/v1/merged_ar_ind/hii_'$COUNTERX'_'$COUNTERY'_ind.tif' -co "COMPRESS=LZW" -separate "${temp[@]}"
 			
-			#'/data/FS_human_footprint/011_data/hii/v1/ar_coeff_pv/tif/AF_temp/hii_'$COUNTERX'_'$COUNTERY'.tif' '/data/FS_human_footprint/011_data/dhi/tiles_xy_fix/cumDHI_'$COUNTERX'_'$COUNTERY'.vrt' '/data/FS_human_footprint/011_data/wdpa/tiles_xy_fix/wdpa_prox_'$COUNTERX'_'$COUNTERY'.vrt' '/data/FS_human_footprint/011_data/ecoregions/tiles_xy_fix/ecoregions_'$COUNTERX'_'$COUNTERY'.vrt' '/data/FS_human_footprint/011_data/gdp/tiles_xy_fix/gdp_2015_'$COUNTERX'_'$COUNTERY'.tif' '/data/FS_human_footprint/011_data/species_richness/tiles/sprich_300_'$COUNTERX'_'$COUNTERY'.tif'
+			elements=()
+
+			for p in $(seq 1 ${#indep_dir[@]}); do
+				i=$(($p - 1))
+				echo $i
+				echo ${indep_dir[$i]}
+				elements+=("${indep_dir[$i]}/tiles/${indep_name[$i]}")
+			done
+			echo "${elements[@]}"
+
+			elements=( "${elements[@]/#/"/"}" )
+			elements=( "${elements[@]/#/"$WORKDIR"}" )
+			elements=( "${elements[@]/%/"_"}" )
+			elements=( "${elements[@]/%/"$COUNTERX"_"$COUNTERY".vrt}" )
+	
+			gdal_merge.py -o $WORKDIR'/011_data/hii/v1/merged_ar_ind/hii_'$COUNTERX'_'$COUNTERY'_ind.tif' -co "COMPRESS=LZW" -separate "${elements[@]}"
+			
 		done
 	done
 fi
