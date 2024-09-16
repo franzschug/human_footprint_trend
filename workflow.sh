@@ -44,7 +44,7 @@ if [ $MERGEHII == TRUE ] ; then
 	years=( 2001 2002 2003 2004 2005 2006 2007 2008 2009 2010 2011 2012 2013 2014 2015 2016 2017 2018 2019 2020 )
 	for i in "${years[@]}"; do
 		mkdir -p $WORKDIR'/010_raw_data/hii/v1/'$i'/'
-		gdalwarp -srcnodata -32768 -dstnodata -32768 $WORKDIR'/010_raw_data/hii/v1/'$i'-01-01_hii_'$i'-01-01.tif' $WORKDIR'/010_raw_data/hii/v1/'$i'-01-01_hii_'$i'-01-01.vrt'
+		gdalwarp -srcnodata -32768 -dstnodata -32768 $WORKDIR'/010_raw_data/hii/v1/'$i'/'*'.tif' $WORKDIR'/010_raw_data/hii/v1/'$i'-01-01_hii_'$i'-01-01.vrt'
 	done
 fi
 
@@ -127,7 +127,8 @@ if [ $EST_AUTOCORR_PRM == TRUE ] ; then
 fi
 
 indep_dir=( '011_data/countries' '011_data/dhi' '011_data/wdpa' '011_data/ecoregions' '011_data/species_richness' '011_data/species_richness' '011_data/species_richness' '011_data/species_richness' '011_data/wui' '011_data/gdp' '011_data/gdp' '011_data/gdp' '011_data/gdp' ) 
-indep_name=( 'countries' 'cumDHI' 'wdpa_prox' 'ecoregions' 'sumTotalMammals' 'sumTotalBirds' 'sumTotalAmphibians' 'sumTotalReptiles' 'global_wui_300' 'gdp_1990' 'gdp_2015' 'gdp_change' 'gdp_rel_change' ) 
+indep_name=( 'countries' 'cumDHI' 'wdpa_prox' 'ecoregions' 'sumTotalMammals_300' 'sumTotalBirds_300' 'sumTotalAmphibians_300' 'sumTotalReptiles_300' 'global_wui_300' 'gdp_1990' 'gdp_2015' 'gdp_change' 'gdp_rel_change' ) 
+
 if [ $PREPINDEP == TRUE ] ; then
 	for (( COUNTERX=-180; COUNTERX<=175; COUNTERX+=5 )); do
 		for (( COUNTERY=90; COUNTERY>=-85; COUNTERY-=5 )); do
@@ -162,11 +163,10 @@ if [ $PREPINDEP == TRUE ] ; then
 fi
 
 
+
 if [ $MERGEINDEP == TRUE ] ; then
-	#for (( COUNTERX=-180; COUNTERX<=175; COUNTERX+=5 )); do
-	for (( COUNTERX=-95; COUNTERX<=-90; COUNTERX+=5 )); do
-		#for (( COUNTERY=90; COUNTERY>=-85; COUNTERY-=5 )); do
-		for (( COUNTERY=50; COUNTERY>=40; COUNTERY-=5 )); do
+	for (( COUNTERX=-180; COUNTERX<=175; COUNTERX+=5 )); do
+		for (( COUNTERY=90; COUNTERY>=-85; COUNTERY-=5 )); do
 			echo $COUNTERX
 			echo $COUNTERY
 			
@@ -174,11 +174,8 @@ if [ $MERGEINDEP == TRUE ] ; then
 
 			for p in $(seq 1 ${#indep_dir[@]}); do
 				i=$(($p - 1))
-				echo $i
-				echo ${indep_dir[$i]}
 				elements+=("${indep_dir[$i]}/tiles/${indep_name[$i]}")
 			done
-			echo "${elements[@]}"
 
 			elements=( "${elements[@]/#/"/"}" )
 			elements=( "${elements[@]/#/"$WORKDIR"}" )
@@ -198,7 +195,7 @@ if [ $PARTITIONMATRIX == TRUE ] ; then
 	
 	gdalbuildvrt $WORKDIR'011_data/hii/v1/merged_hii_ind.vrt' $global_vrt_path
 
-	Rscript $WORKDIR'/090_scripts/parts_generate_pm.R' $global_vrt_path $pm_path
+	#Rscript $WORKDIR'/090_scripts/parts_generate_pm.R' $global_vrt_path $pm_path $partition_size
 fi
 
 if [ $PARTITION == TRUE ] ; then
