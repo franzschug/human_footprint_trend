@@ -166,15 +166,22 @@ if [ $MERGEINDEP == TRUE ] ; then
 			echo $COUNTERY
 			
 			elements=()
-
-			elements+=$WORKDIR'/011_data/hii/v1/ar_coeff_pv/hii_'$COUNTERX'_'$COUNTERY'.tif'
 			
-			for p in $(seq 1 ${#indep_dir[@]}); do
-				i=$(($p - 1))
-				elements+=("$WORKDIR/${indep_dir[$i]}/tiles/${indep_name[$i]}_"$COUNTERX"_"$COUNTERY".vrt")
-			done
-	
-			gdal_merge.py -o $WORKDIR'/011_data/hii/v1/merged_ar_ind/hii_'$COUNTERX'_'$COUNTERY'_ind.tif' -co "COMPRESS=LZW" -separate "${elements[@]}"
+			hii_file=$WORKDIR'/011_data/hii/v1/ar_coeff_pv/hii_'$COUNTERX'_'$COUNTERY'.tif'
+			
+			if [ -e "$hii_file" ]; then
+				echo "File exists. Proceeding with the next steps."
+				elements+=$hii_file
+			
+				for p in $(seq 1 ${#indep_dir[@]}); do
+					i=$(($p - 1))
+					elements+=("$WORKDIR/${indep_dir[$i]}/tiles/${indep_name[$i]}_"$COUNTERX"_"$COUNTERY".vrt")
+				done
+				gdal_merge.py -o $WORKDIR'/011_data/hii/v1/merged_ar_ind/hii_'$COUNTERX'_'$COUNTERY'_ind.tif' -co "COMPRESS=LZW" -separate "${elements[@]}"
+			
+			else
+				echo "HII does not exist. Exiting."
+			fi
 		done
 	done
 fi
