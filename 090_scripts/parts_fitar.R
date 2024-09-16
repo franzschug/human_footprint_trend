@@ -29,7 +29,6 @@ library(remotePARTS)
 library(raster)
 library(doParallel)
 library(foreach)
-source("/data/FS_human_footprint/090_scripts/code/helper-functions.R")  # loads helper functions including the iterator iblkrow()
 registerDoParallel(core_num)
 
 args = commandArgs(trailingOnly=TRUE)
@@ -43,6 +42,7 @@ if (length(args)!=3) {
 }
 
 print(paste(counterx, '_', countery))
+source(paste(working_dir, "/090_scripts/code/helper-functions.R"))  # loads helper functions including the iterator iblkrow()
 
 # ____ Setup ____
 batch_name = paste("global_300", counterx, "_", countery, sep="")
@@ -101,8 +101,8 @@ saveRDS(AR_results, file = AR_save_file)
 rast_all = rasterize(ars_csv_all[, 1:2], img_rst, ars_csv_all[, 3:24], fun=mean)
 rast_cpv = rasterize(ars_csv_cpv[, 1:2], img_rst, ars_csv_cpv[, 3:4], fun=mean)
 
-rasterpath_all = paste("/data/FS_human_footprint/011_data/hii/v1/ar_all_4/hii_", counterx, "_", countery,".tif", sep="")    # path to data #### residuals
-rasterpath_cpv = paste("/data/FS_human_footprint/011_data/hii/v1/ar_coeff_pv_4/hii_", counterx, "_", countery,".tif", sep="")    # path to data
+rasterpath_all = paste(working_dir, "/011_data/hii/v1/ar_all/hii_", counterx, "_", countery,".tif", sep="")    # path to data #### residuals
+rasterpath_cpv = paste(working_dir, "/011_data/hii/v1/ar_coeff_pv/hii_", counterx, "_", countery,".tif", sep="")    # path to data
 
 writeRaster(rast_cpv,rasterpath_cpv,options=c('TFW=YES', 'COMPRESS=LZW'), overwrite=TRUE)
 writeRaster(rast_all,rasterpath_all,options=c('TFW=YES', 'COMPRESS=LZW'), overwrite=TRUE)
