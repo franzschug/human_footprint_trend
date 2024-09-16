@@ -34,10 +34,10 @@ PARTITION=FALSE
 SPLITGLS=FALSE
 
 SPLITANALYSIS=FALSE
+MERGERESULT=FALSE
 
-#partition data!
-#run split parallel gls
-# split analysis
+
+
 
 
 if [ $MERGEHII == TRUE ] ; then
@@ -177,7 +177,8 @@ if [ $MERGEINDEP == TRUE ] ; then
 			#printf '%s ' "${temp[@]}"
 			printf "${temp[*]}"
 
-			gdal_merge.py -o $WORKDIR'/data/FS_human_footprint/011_data/hii/v1/merged_ar_ind/hii_'$COUNTERX'_'$COUNTERY'_ind.tif' -co "COMPRESS=LZW" -separate "${temp[@]}"
+			#gdal_merge.py -o 'data/FS_human_footprint/data/FS_human_footprint/011_data/hii/v1/merged_ar_ind/hii_-95_40_ind.tif' -co "COMPRESS=LZW" -separate "${temp[@]}"
+			#gdal_merge.py -o $WORKDIR'/data/FS_human_footprint/011_data/hii/v1/merged_ar_ind/hii_'$COUNTERX'_'$COUNTERY'_ind.tif' -co "COMPRESS=LZW" -separate "${temp[@]}"
 			
 			#'/data/FS_human_footprint/011_data/hii/v1/ar_coeff_pv/tif/AF_temp/hii_'$COUNTERX'_'$COUNTERY'.tif' '/data/FS_human_footprint/011_data/dhi/tiles_xy_fix/cumDHI_'$COUNTERX'_'$COUNTERY'.vrt' '/data/FS_human_footprint/011_data/wdpa/tiles_xy_fix/wdpa_prox_'$COUNTERX'_'$COUNTERY'.vrt' '/data/FS_human_footprint/011_data/ecoregions/tiles_xy_fix/ecoregions_'$COUNTERX'_'$COUNTERY'.vrt' '/data/FS_human_footprint/011_data/gdp/tiles_xy_fix/gdp_2015_'$COUNTERX'_'$COUNTERY'.tif' '/data/FS_human_footprint/011_data/species_richness/tiles/sprich_300_'$COUNTERX'_'$COUNTERY'.tif'
 		done
@@ -214,6 +215,10 @@ if [ $SPLITANALYSIS == TRUE ] ; then
 
 fi
 
+
+if [ $MERGERESULT == TRUE ] ; then
+
+fi
 
 	
 		
@@ -253,19 +258,4 @@ fi
 
 
 
-
-
-	
-## gls
-### todo todo parallelize!!!!!!  fitgls first to est rng, then use in partition gls
-
-
-# merge result map
- ####  todo todo todo todo todo todo todo todo todo 
-  
-# estimate nugget based on V value (based on range), and using multiple gls
-# size based on good partition size
-
 # use same randomization as for ar, then in r script, extract x and y to load raw data
-
-# gls partition
