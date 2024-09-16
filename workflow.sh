@@ -111,7 +111,7 @@ if [ $EST_AUTOCORR_PRM == TRUE ] ; then
 	outDirSPCORS=$WORKDIR'/011_data/parts/cor/'
 	
 	# Input directories of AR estimates, residuals, and original data
-	dir=$WORKDIR'/011_data/hii/v1/ar_all_4/'
+	dir=$WORKDIR'/011_data/hii/v1/ar_all/'
 	dirstack=$WORKDIR'/011_data/hii/v1/00_stack/'
 	
 	# Estiamte range parameter, shuf - shuffle, tail - last elements
@@ -122,8 +122,8 @@ if [ $EST_AUTOCORR_PRM == TRUE ] ; then
 	
 	ls $dir | grep .tif | shuf |tail -$sample_tiles | parallel -j 10 Rscript $WORKDIR'/090_scripts/parts_estimate_nugget.R' $dir $dirstack $nr_samples $WORKDIR'/011_data/parts/alls_spcors.txt' {}
 	
-	python3 $WORKDIR'/090_scripts/plots/00_distribution_range.py'
-	python3 $WORKDIR'/090_scripts/plots/00_distribution_nugget.py'
+	#python3 $WORKDIR'/090_scripts/plots/00_distribution_range.py'
+	#python3 $WORKDIR'/090_scripts/plots/00_distribution_nugget.py'
 fi
 
 indep_dir=( '011_data/countries' '011_data/dhi' '011_data/wdpa' '011_data/ecoregions' '011_data/species_richness' '011_data/species_richness' '011_data/species_richness' '011_data/species_richness' '011_data/wui' '011_data/gdp' '011_data/gdp' '011_data/gdp' '011_data/gdp' ) 
@@ -172,16 +172,20 @@ if [ $MERGEINDEP == TRUE ] ; then
 			
 			elements=()
 
+			elements+=$WORKDIR'/011_data/hii/v1/ar_coeff_pv/hii_'$COUNTERX'_'$COUNTERY'.tif'
+			
 			for p in $(seq 1 ${#indep_dir[@]}); do
 				i=$(($p - 1))
-				elements+=("${indep_dir[$i]}/tiles/${indep_name[$i]}")
+				elements+=("$WORKDIR/${indep_dir[$i]}/tiles/${indep_name[$i]}_"$COUNTERX"_"$COUNTERY".vrt")
 			done
 
-			elements=( "${elements[@]/#/"/"}" )
-			elements=( "${elements[@]/#/"$WORKDIR"}" )
-			elements=( "${elements[@]/%/"_"}" )
-			elements=( "${elements[@]/%/"$COUNTERX"_"$COUNTERY".vrt}" )
+			#elements=( "${elements[@]/#/"/"}" )
+			#elements=( "${elements[@]/#/"$WORKDIR"}" )
+			#elements=( "${elements[@]/%/"_"}" )
+			#elements=( "${elements[@]/%/"$COUNTERX"_"$COUNTERY".vrt}" )
+			
 	
+			#todo MERGE hii
 			gdal_merge.py -o $WORKDIR'/011_data/hii/v1/merged_ar_ind/hii_'$COUNTERX'_'$COUNTERY'_ind.tif' -co "COMPRESS=LZW" -separate "${elements[@]}"
 			
 		done
