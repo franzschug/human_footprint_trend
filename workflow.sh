@@ -37,9 +37,6 @@ SPLITANALYSIS=FALSE
 MERGERESULT=FALSE
 
 
-
-
-
 if [ $MERGEHII == TRUE ] ; then
 	years=( 2001 2002 2003 2004 2005 2006 2007 2008 2009 2010 2011 2012 2013 2014 2015 2016 2017 2018 2019 2020 )
 	for i in "${years[@]}"; do
@@ -162,8 +159,6 @@ if [ $PREPINDEP == TRUE ] ; then
 	done
 fi
 
-
-
 if [ $MERGEINDEP == TRUE ] ; then
 	for (( COUNTERX=-180; COUNTERX<=175; COUNTERX+=5 )); do
 		for (( COUNTERY=90; COUNTERY>=-85; COUNTERY-=5 )); do
@@ -178,16 +173,8 @@ if [ $MERGEINDEP == TRUE ] ; then
 				i=$(($p - 1))
 				elements+=("$WORKDIR/${indep_dir[$i]}/tiles/${indep_name[$i]}_"$COUNTERX"_"$COUNTERY".vrt")
 			done
-
-			#elements=( "${elements[@]/#/"/"}" )
-			#elements=( "${elements[@]/#/"$WORKDIR"}" )
-			#elements=( "${elements[@]/%/"_"}" )
-			#elements=( "${elements[@]/%/"$COUNTERX"_"$COUNTERY".vrt}" )
-			
 	
-			#todo MERGE hii
 			gdal_merge.py -o $WORKDIR'/011_data/hii/v1/merged_ar_ind/hii_'$COUNTERX'_'$COUNTERY'_ind.tif' -co "COMPRESS=LZW" -separate "${elements[@]}"
-			
 		done
 	done
 fi
