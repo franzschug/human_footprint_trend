@@ -225,38 +225,3 @@ fi
 		
 #- output correlation matrix, variance inflation factor test. then select!
 # write vif new - with subset of the data
-
-
-
-#if [ $FITAR == TRUE ] ; then
-#for (( COUNTERX=-180; COUNTERX<=175; COUNTERX+=5 )); do
-#	for (( COUNTERY=90; COUNTERY>=-85; COUNTERY-=5 )); do
-		#xend=$(($COUNTERX+5))
-		#yend=$(($COUNTERY-5))
-			
-		##remove####printf %s\\n "${years[@]}" | parallel --jobs 20 gdal_translate -of XYZ /data/FS_human_footprint/010_raw_data/hii/v1/{}/hii_$COUNTERX'_'$COUNTERY.vrt /data/FS_human_footprint/010_raw_data/hii/v1/{}/hii_$COUNTERX'_'$COUNTERY.csv
-		
-		#remove###wait
-		
-		#remove##printf %s\\n "${years[@]}" | parallel --jobs 20  sed -i '/32768/d' /data/FS_human_footprint/010_raw_data/hii/v1/{}/hii_$COUNTERX'_'$COUNTERY.csv
-		
-		#fileArr=()
-		#for i in "${years[@]}"
-		#do
-		#	fileArr+=("/data/FS_human_footprint/010_raw_data/hii/v1/"$i"/hii_"$COUNTERX"_"$COUNTERY".vrt")
-		#done
-		#printf "%s\n" "${fileArr[@]}" > "/data/FS_human_footprint/010_raw_data/hii/v1/ts_stack/list_temp.txt"
-		
-		## stack to vrt
-		#gdalbuildvrt -separate /data/FS_human_footprint/010_raw_data/hii/v1/ts_stack/hii_$COUNTERX'_'$COUNTERY.vrt -input_file_list /data/FS_human_footprint/010_raw_data/hii/v1/ts_stack/list_temp.txt
-
-		#rm "/data/FS_human_footprint/010_raw_data/hii/v1/ts_stack/list_temp.txt"
-		
-		# stack to csv
-		#python3 /data/FS_human_footprint/090_scripts/merge_hii_years.py $COUNTERX $COUNTERY
-#	done
-#done
-
-
-
-# use same randomization as for ar, then in r script, extract x and y to load raw data
