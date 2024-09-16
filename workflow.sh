@@ -19,10 +19,10 @@ FITAR=FALSE
 EST_AUTOCORR_PRM=FALSE
 
 ## Prepare, tile independent variables
-PREPINDEP=TRUE
+PREPINDEP=FALSE
 
 ## Merge pixel-wise trend with independent variables
-MERGEINDEP=FALSE
+MERGEINDEP=TRUE
 
 ## Generate partition matrix for complete dataset
 PARTITIONMATRIX=FALSE
@@ -159,6 +159,7 @@ if [ $PREPINDEP == TRUE ] ; then
 		done
 	done
 	
+	# Write Geotiff for one example tile
 	for p in $(seq 1 ${#indep_dir[@]}); do
 		i=$(($p - 1))
 		gdalwarp $WORKDIR'/'${indep_dir[$i]}'/tiles/'${indep_name[$i]}'_-95_40.vrt' $WORKDIR'/'${indep_dir[$i]}'/tiles/'${indep_name[$i]}'_-95_40.tif'
