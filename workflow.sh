@@ -22,18 +22,21 @@ EST_AUTOCORR_PRM=FALSE
 PREPINDEP=FALSE
 
 ## Merge pixel-wise trend with independent variables
-MERGEINDEP=TRUE
+MERGEINDEP=FALSE
 
 ## Generate partition matrix for complete dataset
-PARTITIONMATRIX=FALSE
+PARTITIONMATRIX=TRUE
 
 ## Split data into randomized partitions
 PARTITION=FALSE
 
-
+## Perform split GLS
 SPLITGLS=FALSE
 
+## Analyse split GLS results
 SPLITANALYSIS=FALSE
+
+## Merge split GLS results
 MERGERESULT=FALSE
 
 
@@ -187,13 +190,15 @@ if [ $MERGEINDEP == TRUE ] ; then
 fi
 
 if [ $PARTITIONMATRIX == TRUE ] ; then
-	global_vrt_path=$WORKDIR'011_data/hii/v1/merged_ar_ind/'*'.vrt'
+	global_vrt_path=$WORKDIR'/011_data/hii/v1/merged_hii_ind.vrt'
 	pm_path=$WORKDIR'011_data/parts/pm/global_partition.rds'
 	partition_size=2000
 	
-	gdalbuildvrt $WORKDIR'011_data/hii/v1/merged_hii_ind.vrt' $global_vrt_path
+	#ls $WORKDIR'/011_data/hii/v1/merged_ar_ind/'*.tif > $WORKDIR'/011_data/hii/v1/list_temp.txt'			
+	#gdalbuildvrt $global_vrt_path -input_file_list $WORKDIR'/011_data/hii/v1/list_temp.txt'
+	#rm $WORKDIR'/011_data/hii/v1/00_stack/list_temp.txt'
 
-	#Rscript $WORKDIR'/090_scripts/parts_generate_pm.R' $global_vrt_path $pm_path $partition_size
+	Rscript $WORKDIR'/090_scripts/parts_generate_pm.R' $global_vrt_path $pm_path $partition_size
 fi
 
 if [ $PARTITION == TRUE ] ; then
