@@ -8,7 +8,7 @@
 # :Parameters:  dir - data directory
 #               n_per_tile - sample size, pixels within each tile
 #               iter - iterations
-#               outFileSPCORS - path to .txt, write spatial autocorrelation parameter
+#               outFileSPCORS - path to .txt, write spatial autocorrelation parameter - range
 #               outDirSPCORS - path to save autocorrelation object
 #               img_tile - current tile
 #
