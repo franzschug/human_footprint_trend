@@ -119,8 +119,9 @@ if [ $EST_AUTOCORR_PRM == TRUE ] ; then
 	
 	# Estimate nugget parameter
 	nr_samples=5000
+	save_dir=$WORKDIR'/011_data/parts/gls/'
 	
-	ls $dir | grep .tif | shuf |tail -$sample_tiles | parallel -j 10 Rscript $WORKDIR'/090_scripts/parts_estimate_nugget.R' $dir $dirstack $nr_samples $WORKDIR'/011_data/parts/alls_spcors.txt' {}
+	ls $dir | grep .tif | shuf |tail -$sample_tiles | parallel -j 10 Rscript $WORKDIR'/090_scripts/parts_estimate_nugget.R' $dir $dirstack $nr_samples $outFileSPCORS $outFileNUGGET $save_dir {}
 	
 	#python3 $WORKDIR'/090_scripts/plots/00_distribution_range.py'
 	#python3 $WORKDIR'/090_scripts/plots/00_distribution_nugget.py'
@@ -191,23 +192,27 @@ fi
 
 if [ $PARTITIONMATRIX == TRUE ] ; then
 	global_vrt_path=$WORKDIR'/011_data/hii/v1/merged_hii_ind.vrt'
-	pm_path=$WORKDIR'011_data/parts/pm/global_partition.rds'
+	pm_path=$WORKDIR'/011_data/parts/pm/global_partition_uncompressed.rds'
 	partition_size=2000
 	
-	#ls $WORKDIR'/011_data/hii/v1/merged_ar_ind/'*.tif > $WORKDIR'/011_data/hii/v1/list_temp.txt'			
-	#gdalbuildvrt $global_vrt_path -input_file_list $WORKDIR'/011_data/hii/v1/list_temp.txt'
-	#rm $WORKDIR'/011_data/hii/v1/00_stack/list_temp.txt'
+	ls $WORKDIR'/011_data/hii/v1/merged_ar_ind/'*.tif > $WORKDIR'/011_data/hii/v1/list_temp.txt'			
+	gdalbuildvrt $global_vrt_path -input_file_list $WORKDIR'/011_data/hii/v1/list_temp.txt'
+	rm $WORKDIR'/011_data/hii/v1/list_temp.txt'
 
 	Rscript $WORKDIR'/090_scripts/parts_generate_pm.R' $global_vrt_path $pm_path $partition_size
 fi
 
 if [ $PARTITION == TRUE ] ; then
-	data_path=
-	$WORKDIR'011_data/parts/pm/global_partition.rds'
-	pm_path=$WORKDIR'011_data/parts/pm/global_partition.rds'
-	sub_pm_outdir=$WORKDIR'011_data/parts/pm/'
 	
-	Rscript $WORKDIR'/090_scripts/parts_split_partitions.R' $data_path $pm_path $sub_pm_outdir
+	#Rscript $WORKDIR/090_scripts/parts_split_partitions.R  $WORKDIR/011_data/hii/v1/temp_obs/hii_global_reduced_subset_5million.csv $WORKDIR/011_data/parts/pm/pm_global_300m_5million.rds $WORKDIR/011_data/parts/pm/gls_300m_subpm/
+	Rscript $WORKDIR/090_scripts/parts_split_partitions.R  $WORKDIR/011_data/hii/v1/temp_obs/hii_global_reduced_subset_5million.csv $WORKDIR/011_data/parts/pm/global_partition.rds $WORKDIR/011_data/parts/pm/gls_300m_subpm/
+	
+	#data_path=
+	#$WORKDIR'/011_data/parts/pm/global_partition.rds'
+	#pm_path=$WORKDIR'/011_data/parts/pm/global_partition.rds'
+	#sub_pm_outdir=$WORKDIR'/011_data/parts/pm/'
+	
+	#Rscript $WORKDIR'/090_scripts/parts_split_partitions.R' $data_path $pm_path $sub_pm_outdir
 fi
 
 if [ $SPLITGLS == TRUE ] ; then
