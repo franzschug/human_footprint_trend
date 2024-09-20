@@ -1,5 +1,7 @@
 #!/bin/bash
 
+jbs=20
+
 ## Working directory
 WORKDIR='/data/FS_human_footprint'
 
@@ -21,11 +23,14 @@ EST_AUTOCORR_PRM=FALSE
 ## Prepare, tile independent variables
 PREPINDEP=FALSE
 
+## Prepare csv for remotePARTS
+PREPCSV=TRUE
+
 ## Merge pixel-wise trend with independent variables
 MERGEINDEP=FALSE
 
 ## Generate partition matrix for complete dataset
-PARTITIONMATRIX=TRUE
+PARTITIONMATRIX=FALSE
 
 ## Split data into randomized partitions
 PARTITION=FALSE
@@ -57,7 +62,7 @@ if [ $TILE == TRUE ] ; then
 			xend=$(($COUNTERX+5))
 			yend=$(($COUNTERY-5))
 					
-			printf %s\\n "${years[@]}" | parallel --jobs 20 gdal_translate -projwin $COUNTERX $COUNTERY $xend $yend -of VRT -a_nodata -32768 $WORKDIR'/010_raw_data/hii/v1/'{}'-01-01_hii_'{}'-01-01.vrt' $WORKDIR'/011_data/hii/v1/'{}'/hii_'$COUNTERX'_'$COUNTERY'.vrt'
+			printf %s\\n "${years[@]}" | parallel --jobs $jbs gdal_translate -projwin $COUNTERX $COUNTERY $xend $yend -of VRT -a_nodata -32768 $WORKDIR'/010_raw_data/hii/v1/'{}'-01-01_hii_'{}'-01-01.vrt' $WORKDIR'/011_data/hii/v1/'{}'/hii_'$COUNTERX'_'$COUNTERY'.vrt'
 		done
 	done
 fi
@@ -115,13 +120,13 @@ if [ $EST_AUTOCORR_PRM == TRUE ] ; then
 	dirstack=$WORKDIR'/011_data/hii/v1/00_stack/'
 	
 	# Estiamte range parameter, shuf - shuffle, tail - last elements
-	ls $dir | grep .tif | shuf | tail -$sample_tiles | parallel -j 10 Rscript $WORKDIR'/090_scripts/parts_fitcor.R' $dir $n_per_tile $iterations $outFileSPCORS $outDirSPCORS {}
+	ls $dir | grep .tif | shuf | tail -$sample_tiles | parallel -j $jbs Rscript $WORKDIR'/090_scripts/parts_fitcor.R' $dir $n_per_tile $iterations $outFileSPCORS $outDirSPCORS {}
 	
 	# Estimate nugget parameter
 	nr_samples=5000
 	save_dir=$WORKDIR'/011_data/parts/gls/'
 	
-	ls $dir | grep .tif | shuf |tail -$sample_tiles | parallel -j 10 Rscript $WORKDIR'/090_scripts/parts_estimate_nugget.R' $dir $dirstack $nr_samples $outFileSPCORS $outFileNUGGET $save_dir {}
+	ls $dir | grep .tif | shuf |tail -$sample_tiles | parallel -j $jbs Rscript $WORKDIR'/090_scripts/parts_estimate_nugget.R' $dir $dirstack $nr_samples $outFileSPCORS $outFileNUGGET $save_dir {}
 	
 	#python3 $WORKDIR'/090_scripts/plots/00_distribution_range.py'
 	#python3 $WORKDIR'/090_scripts/plots/00_distribution_nugget.py'
@@ -190,22 +195,40 @@ if [ $MERGEINDEP == TRUE ] ; then
 	done
 fi
 
+if [ $PREPCSV == TRUE ] ; then	
+	#ls $WORKDIR'/011_data/hii/v1/merged_ar_ind' | grep '_ind.tif' | parallel -j $jbs gdal2xyz.py -allbands $WORKDIR'/011_data/hii/v1/merged_ar_ind/'{} $WORKDIR'/011_data/hii/v1/merged_ar_ind/'{}'_temp.csv'
+	
+	#ls $WORKDIR'/011_data/hii/v1/merged_ar_ind' | grep '_temp.csv' | parallel -j $jbs python3 $WORKDIR'/090_scripts/prep_csv_for_partGLS.py' $WORKDIR'/011_data/hii/v1/merged_ar_ind/'{} $WORKDIR'/011_data/hii/v1/merged_ar_ind/'{}'_nona.csv'	
+	
+	#ls $WORKDIR'/011_data/hii/v1/merged_ar_ind' | grep '_temp.csv\b' | parallel -j $jbs rm $WORKDIR'/011_data/hii/v1/merged_ar_ind/'{}
+	
+	maybe not merge???
+	python3 $WORKDIR'/090_scripts/merge_hii_coeff_for_global_gls.py' $WORKDIR'/011_data/hii/v1/merged_ar_ind/' $WORKDIR'/011_data/hii/v1/merged_ar_ind/full_data_nona.csv' 
+fi
+
+
 if [ $PARTITIONMATRIX == TRUE ] ; then
 	global_vrt_path=$WORKDIR'/011_data/hii/v1/merged_hii_ind.vrt'
-	pm_path=$WORKDIR'/011_data/parts/pm/global_partition_uncompressed.rds'
+	pm_path=$WORKDIR'/011_data/parts/pm/global_partition'
 	partition_size=2000
+	max_col_per_part=8000
 	
-	ls $WORKDIR'/011_data/hii/v1/merged_ar_ind/'*.tif > $WORKDIR'/011_data/hii/v1/list_temp.txt'			
-	gdalbuildvrt $global_vrt_path -input_file_list $WORKDIR'/011_data/hii/v1/list_temp.txt'
-	rm $WORKDIR'/011_data/hii/v1/list_temp.txt'
+	#ls $WORKDIR'/011_data/hii/v1/merged_ar_ind/'*.tif > $WORKDIR'/011_data/hii/v1/list_temp.txt'			
+	#gdalbuildvrt $global_vrt_path -input_file_list $WORKDIR'/011_data/hii/v1/list_temp.txt'
+	#rm $WORKDIR'/011_data/hii/v1/list_temp.txt'
 
-	Rscript $WORKDIR'/090_scripts/parts_generate_pm.R' $global_vrt_path $pm_path $partition_size
+
+	
+
+	Rscript $WORKDIR'/090_scripts/parts_generate_pm.R' $global_vrt_path $pm_path $partition_size $max_col_per_part
+	gdal_translate -of xyz /data/FS_human_footprint/011_data/hii/v1/merged_hii_ind.vrt /data/FS_human_footprint/011_data/hii/v1/merged_hii_indtrans.txt
 fi
 
 if [ $PARTITION == TRUE ] ; then
 	
 	#Rscript $WORKDIR/090_scripts/parts_split_partitions.R  $WORKDIR/011_data/hii/v1/temp_obs/hii_global_reduced_subset_5million.csv $WORKDIR/011_data/parts/pm/pm_global_300m_5million.rds $WORKDIR/011_data/parts/pm/gls_300m_subpm/
-	Rscript $WORKDIR/090_scripts/parts_split_partitions.R  $WORKDIR/011_data/hii/v1/temp_obs/hii_global_reduced_subset_5million.csv $WORKDIR/011_data/parts/pm/global_partition.rds $WORKDIR/011_data/parts/pm/gls_300m_subpm/
+	
+	Rscript /data/FS_human_footprint/090_scripts/parts_split_partitions.R  /data/FS_human_footprint/011_data/hii/v1/temp_obs/hii_global_reduced_subset_5million.csv /data/FS_human_footprint/011_data/parts/pm/pm_global_300m_5million.rds /data/FS_human_footprint/011_data/parts/pm/gls_300m_subpm/
 	
 	#data_path=
 	#$WORKDIR'/011_data/parts/pm/global_partition.rds'
@@ -215,21 +238,21 @@ if [ $PARTITION == TRUE ] ; then
 	#Rscript $WORKDIR'/090_scripts/parts_split_partitions.R' $data_path $pm_path $sub_pm_outdir
 fi
 
-if [ $SPLITGLS == TRUE ] ; then
-perform vif and warn!
-print if vif high
-	confirmVIF=TRUE # If independent variables highly correlated accoding to VIF, stop to confirm
-	
-fi
+#if [ $SPLITGLS == TRUE ] ; then
+#perform vif and warn!
+#print if vif high
+#	confirmVIF=TRUE # If independent variables highly correlated accoding to VIF, stop to confirm
+#	
+#fi
 
-if [ $SPLITANALYSIS == TRUE ] ; then
-
-fi
-
-
-if [ $MERGERESULT == TRUE ] ; then
-
-fi
+#if [ $SPLITANALYSIS == TRUE ] ; then
+#
+#fi
+#
+#
+#if [ $MERGERESULT == TRUE ] ; then
+#
+#fi
 
 	
 		
