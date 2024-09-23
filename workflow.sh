@@ -23,11 +23,11 @@ EST_AUTOCORR_PRM=FALSE
 ## Prepare, tile independent variables
 PREPINDEP=FALSE
 
-## Prepare csv for remotePARTS
-PREPCSV=TRUE
-
 ## Merge pixel-wise trend with independent variables
-MERGEINDEP=FALSE
+MERGEINDEP=TRUE
+
+## Prepare csv for remotePARTS
+PREPCSV=FALSE
 
 ## Generate partition matrix for complete dataset
 PARTITIONMATRIX=FALSE
@@ -132,8 +132,8 @@ if [ $EST_AUTOCORR_PRM == TRUE ] ; then
 	#python3 $WORKDIR'/090_scripts/plots/00_distribution_nugget.py'
 fi
 
-indep_dir=( '011_data/countries' '011_data/dhi' '011_data/wdpa' '011_data/ecoregions' '011_data/species_richness' '011_data/species_richness' '011_data/species_richness' '011_data/species_richness' '011_data/wui' '011_data/gdp' '011_data/gdp' '011_data/gdp' '011_data/gdp' ) 
-indep_name=( 'countries' 'cumDHI' 'wdpa_prox' 'ecoregions' 'sumTotalMammals_300' 'sumTotalBirds_300' 'sumTotalAmphibians_300' 'sumTotalReptiles_300' 'global_wui_300' 'gdp_1990' 'gdp_2015' 'gdp_change' 'gdp_rel_change' ) 
+indep_dir=( '011_data/countries' '011_data/dhi' '011_data/wdpa' '011_data/ecoregions' '011_data/species_richness' '011_data/species_richness' '011_data/species_richness' '011_data/species_richness' '011_data/wui' '011_data/gdp' '011_data/gdp' '011_data/gdp' '011_data/gdp' '011_data/continent' ) 
+indep_name=( 'countries' 'cumDHI' 'wdpa_prox' 'ecoregions' 'sumTotalMammals_300' 'sumTotalBirds_300' 'sumTotalAmphibians_300' 'sumTotalReptiles_300' 'global_wui_300' 'gdp_1990' 'gdp_2015' 'gdp_change' 'gdp_rel_change' 'continents' )
 
 if [ $PREPINDEP == TRUE ] ; then
 	for (( COUNTERX=-180; COUNTERX<=175; COUNTERX+=5 )); do
@@ -179,7 +179,7 @@ if [ $MERGEINDEP == TRUE ] ; then
 			hii_file=$WORKDIR'/011_data/hii/v1/ar_coeff_pv/hii_'$COUNTERX'_'$COUNTERY'.tif'
 			
 			if [ -e "$hii_file" ]; then
-				echo "File exists. Proceeding with the next steps."
+				echo "File exists. Proceeding with merge."
 				elements+=$hii_file
 			
 				for p in $(seq 1 ${#indep_dir[@]}); do
@@ -202,10 +202,23 @@ if [ $PREPCSV == TRUE ] ; then
 	
 	#ls $WORKDIR'/011_data/hii/v1/merged_ar_ind' | grep '_temp.csv\b' | parallel -j $jbs rm $WORKDIR'/011_data/hii/v1/merged_ar_ind/'{}
 	
+	###### Write Geotiff for one example tile
+	for p in $(seq 1 ${#indep_dir[@]}); do
+		i=$(($p - 1))
+		python3 $WORKDIR'/090_scripts/merge_hii_coeff_for_global_gls.py' $WORKDIR'/011_data/hii/v1/merged_ar_ind/' $WORKDIR'/011_data/hii/v1/merged_ar_ind/'
+		
+		#gdalwarp $WORKDIR'/'${indep_dir[$i]}'/tiles/'${indep_name[$i]}'_-95_40.vrt' $WORKDIR'/'${indep_dir[$i]}'/tiles/'${indep_name[$i]}'_-95_40.tif'
+		${indep_dir[$i]}
+	done
+	
 	maybe not merge???
-	python3 $WORKDIR'/090_scripts/merge_hii_coeff_for_global_gls.py' $WORKDIR'/011_data/hii/v1/merged_ar_ind/' $WORKDIR'/011_data/hii/v1/merged_ar_ind/full_data_nona.csv' 
+	python3 $WORKDIR'/090_scripts/merge_hii_coeff_for_global_gls.py' $WORKDIR'/011_data/hii/v1/merged_ar_ind/' $WORKDIR'/011_data/hii/v1/merged_ar_ind/full_data_nona.csv'
+
+merge into n files, with n = number of cols, should be ca. 9gb per file	
 fi
 
+
+###if FILTER ... filter by name/column and value, e.g. continent=2. eliminates all other values!
 
 if [ $PARTITIONMATRIX == TRUE ] ; then
 	global_vrt_path=$WORKDIR'/011_data/hii/v1/merged_hii_ind.vrt'
@@ -221,6 +234,8 @@ if [ $PARTITIONMATRIX == TRUE ] ; then
 	
 
 	Rscript $WORKDIR'/090_scripts/parts_generate_pm.R' $global_vrt_path $pm_path $partition_size $max_col_per_part
+	
+	
 	gdal_translate -of xyz /data/FS_human_footprint/011_data/hii/v1/merged_hii_ind.vrt /data/FS_human_footprint/011_data/hii/v1/merged_hii_indtrans.txt
 fi
 
