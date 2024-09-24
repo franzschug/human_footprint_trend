@@ -26,6 +26,9 @@ PREPINDEP=FALSE
 ## Merge pixel-wise trend with independent variables
 MERGEINDEP=TRUE
 
+## Restrict analysis to a subset of the data
+FILTER=FALSE
+
 ## Prepare csv for remotePARTS
 PREPCSV=FALSE
 
@@ -134,6 +137,7 @@ fi
 
 indep_dir=( '011_data/countries' '011_data/dhi' '011_data/wdpa' '011_data/ecoregions' '011_data/species_richness' '011_data/species_richness' '011_data/species_richness' '011_data/species_richness' '011_data/wui' '011_data/gdp' '011_data/gdp' '011_data/gdp' '011_data/gdp' '011_data/continent' ) 
 indep_name=( 'countries' 'cumDHI' 'wdpa_prox' 'ecoregions' 'sumTotalMammals_300' 'sumTotalBirds_300' 'sumTotalAmphibians_300' 'sumTotalReptiles_300' 'global_wui_300' 'gdp_1990' 'gdp_2015' 'gdp_change' 'gdp_rel_change' 'continents' )
+col_names=( 'Long' 'Lat' 'coef' 'pval' 'country' 'cumdhi' 'wdpa' 'eco' 'mam' 'brid' 'amph' 'rept' 'wui' 'gdp90' 'gdp15' 'gdpch' 'gdprelch' 'contin' )
 
 if [ $PREPINDEP == TRUE ] ; then
 	for (( COUNTERX=-180; COUNTERX<=175; COUNTERX+=5 )); do
@@ -195,6 +199,16 @@ if [ $MERGEINDEP == TRUE ] ; then
 	done
 fi
 
+if [ $FILTER == TRUE ] ; then
+#delete all filtered files
+###if FILTER ... filter by name/column and value, e.g. continent=2. eliminates all other values!
+# three filters: subset in percent
+# data_are
+# data_not
+fi
+
+USE_FILTERED = FALSE
+
 if [ $PREPCSV == TRUE ] ; then	
 	#ls $WORKDIR'/011_data/hii/v1/merged_ar_ind' | grep '_ind.tif' | parallel -j $jbs gdal2xyz.py -allbands $WORKDIR'/011_data/hii/v1/merged_ar_ind/'{} $WORKDIR'/011_data/hii/v1/merged_ar_ind/'{}'_temp.csv'
 	
@@ -202,11 +216,11 @@ if [ $PREPCSV == TRUE ] ; then
 	
 	#ls $WORKDIR'/011_data/hii/v1/merged_ar_ind' | grep '_temp.csv\b' | parallel -j $jbs rm $WORKDIR'/011_data/hii/v1/merged_ar_ind/'{}
 	
-	###### Write Geotiff for one example tile
 	for p in $(seq 1 ${#indep_dir[@]}); do
 		i=$(($p - 1))
-		python3 $WORKDIR'/090_scripts/merge_hii_coeff_for_global_gls.py' $WORKDIR'/011_data/hii/v1/merged_ar_ind/' $WORKDIR'/011_data/hii/v1/merged_ar_ind/'
+		python3 $WORKDIR'/090_scripts/merge_in_columns_for_global_analysis.py' $WORKDIR'/011_data/hii/v1/merged_ar_ind/' $WORKDIR'/011_data/hii/v1/merged_ar_ind/global/' ${indep_dir[$i]}
 		
+		### Write Geotiff for one example tile
 		#gdalwarp $WORKDIR'/'${indep_dir[$i]}'/tiles/'${indep_name[$i]}'_-95_40.vrt' $WORKDIR'/'${indep_dir[$i]}'/tiles/'${indep_name[$i]}'_-95_40.tif'
 		${indep_dir[$i]}
 	done
@@ -218,7 +232,6 @@ merge into n files, with n = number of cols, should be ca. 9gb per file
 fi
 
 
-###if FILTER ... filter by name/column and value, e.g. continent=2. eliminates all other values!
 
 if [ $PARTITIONMATRIX == TRUE ] ; then
 	global_vrt_path=$WORKDIR'/011_data/hii/v1/merged_hii_ind.vrt'
