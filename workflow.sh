@@ -40,10 +40,10 @@ FILTER_DATA_NOT=[ 3 ]
 # data_not
 
 ## Prepare csv for remotePARTS
-PREPCSV=TRUE
+PREPCSV=FALSE
 
 ## Generate partition matrix for complete dataset
-PARTITIONMATRIX=FALSE
+PARTITIONMATRIX=TRUE
 
 ## Split data into randomized partitions
 PARTITION=FALSE
@@ -226,21 +226,14 @@ if [ $PREPCSV == TRUE ] ; then
 	# Remove originals
 	#ls $WORKDIR'/011_data/hii/v1/merged_ar_ind' | grep '_temp.csv\b' | parallel -j $jbs rm $WORKDIR'/011_data/hii/v1/merged_ar_ind/'{}
 	
-	parallel -j 17 python3 $WORKDIR'/090_scripts/merge_in_columns_for_global_analysis.py' $WORKDIR'/011_data/hii/v1/merged_ar_ind/' $WORKDIR'/011_data/hii/v1/merged_ar_ind/global/' ::: "${indep_dir[@]}" :::+ "${indep_name[@]}"  :::+ "${index[@]}"
+	parallel -j $jbs python3 $WORKDIR'/090_scripts/merge_in_columns_for_global_analysis.py' $WORKDIR'/011_data/hii/v1/merged_ar_ind/' $WORKDIR'/011_data/hii/v1/merged_ar_ind/global/' ::: "${indep_dir[@]}" :::+ "${indep_name[@]}"  :::+ "${index[@]}"
 	
+	### Write Geotiff for one example tile for all datasets
 	#for p in $(seq 1 ${#indep_dir[@]}); do
 		#i=$(($p - 1))
-		
-		#python3 $WORKDIR'/090_scripts/merge_in_columns_for_global_analysis.py' $WORKDIR'/011_data/hii/v1/merged_ar_ind/' $WORKDIR'/011_data/hii/v1/merged_ar_ind/global/' ${indep_dir[$i]} ${indep_name[$i]} $i
-		
-		### Write Geotiff for one example tile for all datasets
 		#gdalwarp $WORKDIR'/'${indep_dir[$i]}'/tiles/'${indep_name[$i]}'_-95_40.vrt' $WORKDIR'/'${indep_dir[$i]}'/tiles/'${indep_name[$i]}'_-95_40.tif'
 	#done
 	
-	#####maybe not merge???
-	#####python3 $WORKDIR'/090_scripts/merge_hii_coeff_for_global_gls.py' $WORKDIR'/011_data/hii/v1/merged_ar_ind/' $WORKDIR'/011_data/hii/v1/merged_ar_ind/full_data_nona.csv'
-
-#merge into n files, with n = number of cols, should be ca. 9gb per file	
 fi
 
 
