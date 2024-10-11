@@ -22,15 +22,25 @@ EST_AUTOCORR_PRM=FALSE
 
 ## Prepare, tile independent variables
 PREPINDEP=FALSE
+indep_dir=( '011_data/countries' '011_data/dhi' '011_data/wdpa' '011_data/ecoregions' '011_data/species_richness' '011_data/species_richness' '011_data/species_richness' '011_data/species_richness' '011_data/wui' '011_data/gdp' '011_data/gdp' '011_data/gdp' '011_data/gdp' '011_data/continent' ) 
+indep_name=( 'countries' 'cumDHI' 'wdpa_prox' 'ecoregions' 'sumTotalMammals_300' 'sumTotalBirds_300' 'sumTotalAmphibians_300' 'sumTotalReptiles_300' 'global_wui_300' 'gdp_1990' 'gdp_2015' 'gdp_change' 'gdp_rel_change' 'continents' )
+#col_names=( 'Long' 'Lat' 'coef' 'pval' 'country' 'cumdhi' 'wdpa' 'eco' 'mam' 'brid' 'amph' 'rept' 'wui' 'gdp90' 'gdp15' 'gdpch' 'gdprelch' 'contin' )
+index=( 4 5 6 7 8 9 10 11 12 13 14 15 16 17 )
 
 ## Merge pixel-wise trend with independent variables
-MERGEINDEP=TRUE
+MERGEINDEP=FALSE
 
 ## Restrict analysis to a subset of the data
 FILTER=FALSE
+FILTER_SUBSET_PERCENT=2
+FILTER_DATA_ARE=[ continents ]
+FILTER_DATA_NOT=[ 3 ]
+# three filters: subset in percent
+# data_are
+# data_not
 
 ## Prepare csv for remotePARTS
-PREPCSV=FALSE
+PREPCSV=TRUE
 
 ## Generate partition matrix for complete dataset
 PARTITIONMATRIX=FALSE
@@ -135,10 +145,6 @@ if [ $EST_AUTOCORR_PRM == TRUE ] ; then
 	#python3 $WORKDIR'/090_scripts/plots/00_distribution_nugget.py'
 fi
 
-indep_dir=( '011_data/countries' '011_data/dhi' '011_data/wdpa' '011_data/ecoregions' '011_data/species_richness' '011_data/species_richness' '011_data/species_richness' '011_data/species_richness' '011_data/wui' '011_data/gdp' '011_data/gdp' '011_data/gdp' '011_data/gdp' '011_data/continent' ) 
-indep_name=( 'countries' 'cumDHI' 'wdpa_prox' 'ecoregions' 'sumTotalMammals_300' 'sumTotalBirds_300' 'sumTotalAmphibians_300' 'sumTotalReptiles_300' 'global_wui_300' 'gdp_1990' 'gdp_2015' 'gdp_change' 'gdp_rel_change' 'continents' )
-col_names=( 'Long' 'Lat' 'coef' 'pval' 'country' 'cumdhi' 'wdpa' 'eco' 'mam' 'brid' 'amph' 'rept' 'wui' 'gdp90' 'gdp15' 'gdpch' 'gdprelch' 'contin' )
-
 if [ $PREPINDEP == TRUE ] ; then
 	for (( COUNTERX=-180; COUNTERX<=175; COUNTERX+=5 )); do
 		for (( COUNTERY=90; COUNTERY>=-85; COUNTERY-=5 )); do
@@ -205,30 +211,36 @@ if [ $FILTER == TRUE ] ; then
 # three filters: subset in percent
 # data_are
 # data_not
+	USE_FILTERED=TRUE
 fi
 
-USE_FILTERED = FALSE
+USE_FILTERED=TRUE
 
 if [ $PREPCSV == TRUE ] ; then	
+	# Translate tif to csv
 	#ls $WORKDIR'/011_data/hii/v1/merged_ar_ind' | grep '_ind.tif' | parallel -j $jbs gdal2xyz.py -allbands $WORKDIR'/011_data/hii/v1/merged_ar_ind/'{} $WORKDIR'/011_data/hii/v1/merged_ar_ind/'{}'_temp.csv'
 	
+	# Remove no data lines
 	#ls $WORKDIR'/011_data/hii/v1/merged_ar_ind' | grep '_temp.csv' | parallel -j $jbs python3 $WORKDIR'/090_scripts/prep_csv_for_partGLS.py' $WORKDIR'/011_data/hii/v1/merged_ar_ind/'{} $WORKDIR'/011_data/hii/v1/merged_ar_ind/'{}'_nona.csv'	
 	
+	# Remove originals
 	#ls $WORKDIR'/011_data/hii/v1/merged_ar_ind' | grep '_temp.csv\b' | parallel -j $jbs rm $WORKDIR'/011_data/hii/v1/merged_ar_ind/'{}
 	
-	for p in $(seq 1 ${#indep_dir[@]}); do
-		i=$(($p - 1))
-		python3 $WORKDIR'/090_scripts/merge_in_columns_for_global_analysis.py' $WORKDIR'/011_data/hii/v1/merged_ar_ind/' $WORKDIR'/011_data/hii/v1/merged_ar_ind/global/' ${indep_dir[$i]}
-		
-		### Write Geotiff for one example tile
-		#gdalwarp $WORKDIR'/'${indep_dir[$i]}'/tiles/'${indep_name[$i]}'_-95_40.vrt' $WORKDIR'/'${indep_dir[$i]}'/tiles/'${indep_name[$i]}'_-95_40.tif'
-		${indep_dir[$i]}
-	done
+	parallel -j 17 python3 $WORKDIR'/090_scripts/merge_in_columns_for_global_analysis.py' $WORKDIR'/011_data/hii/v1/merged_ar_ind/' $WORKDIR'/011_data/hii/v1/merged_ar_ind/global/' ::: "${indep_dir[@]}" :::+ "${indep_name[@]}"  :::+ "${index[@]}"
 	
-	maybe not merge???
-	python3 $WORKDIR'/090_scripts/merge_hii_coeff_for_global_gls.py' $WORKDIR'/011_data/hii/v1/merged_ar_ind/' $WORKDIR'/011_data/hii/v1/merged_ar_ind/full_data_nona.csv'
+	#for p in $(seq 1 ${#indep_dir[@]}); do
+		#i=$(($p - 1))
+		
+		#python3 $WORKDIR'/090_scripts/merge_in_columns_for_global_analysis.py' $WORKDIR'/011_data/hii/v1/merged_ar_ind/' $WORKDIR'/011_data/hii/v1/merged_ar_ind/global/' ${indep_dir[$i]} ${indep_name[$i]} $i
+		
+		### Write Geotiff for one example tile for all datasets
+		#gdalwarp $WORKDIR'/'${indep_dir[$i]}'/tiles/'${indep_name[$i]}'_-95_40.vrt' $WORKDIR'/'${indep_dir[$i]}'/tiles/'${indep_name[$i]}'_-95_40.tif'
+	#done
+	
+	#####maybe not merge???
+	#####python3 $WORKDIR'/090_scripts/merge_hii_coeff_for_global_gls.py' $WORKDIR'/011_data/hii/v1/merged_ar_ind/' $WORKDIR'/011_data/hii/v1/merged_ar_ind/full_data_nona.csv'
 
-merge into n files, with n = number of cols, should be ca. 9gb per file	
+#merge into n files, with n = number of cols, should be ca. 9gb per file	
 fi
 
 
