@@ -10,7 +10,7 @@ library(remotePARTS)
 args = commandArgs(trailingOnly=TRUE)
 
 # test for arguments
-if (length(args)!=5) {
+if (length(args)!=3) {
   stop("Five arguments expected.n", call.=FALSE)
 } else {
   fileSub = args[1]
@@ -24,6 +24,8 @@ START_TIME = Sys.time()
 
 # ____ Setup ____
 currentIt = as.numeric(gsub("\\D", "", fileSub))
+print(fileSub)
+print(length(fileSub))
 
 partGLS_savepath = paste(gls_outdir, 'gls_part_', currentIt, '.rds', sep = "", collapse = NULL)
 if(!dir.exists(gls_outdir)){dir.create(gls_outdir)}
@@ -41,10 +43,10 @@ form = 'coef ~ 1'
 form0 = 'coef ~ 1'
 
 partition_data = readRDS(fileSub)
-#print(partition_data)
+print(partition_data)
 #print(head(partition_data[[1]]))
 #print(head(partition_data[[2]]))
-
+quit()
 npart = length(partition_data)
 ncross = 6
 
