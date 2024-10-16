@@ -26,24 +26,31 @@ indep_dir=( '011_data/countries' '011_data/dhi' '011_data/wdpa' '011_data/ecoreg
 indep_name=( 'countries' 'cumDHI' 'wdpa_prox' 'ecoregions' 'sumTotalMammals_300' 'sumTotalBirds_300' 'sumTotalAmphibians_300' 'sumTotalReptiles_300' 'global_wui_300' 'gdp_1990' 'gdp_2015' 'gdp_change' 'gdp_rel_change' 'continents' )
 #col_names=( 'Long' 'Lat' 'coef' 'pval' 'country' 'cumdhi' 'wdpa' 'eco' 'mam' 'brid' 'amph' 'rept' 'wui' 'gdp90' 'gdp15' 'gdpch' 'gdprelch' 'contin' )
 index=( 4 5 6 7 8 9 10 11 12 13 14 15 16 17 )
-
+ar_name=( 'long' 'lat' 'coeff' 'pval' )
+ar_index=( 0 1 2 3 )
+	
 ## Merge pixel-wise trend with independent variables
 MERGEINDEP=FALSE
-
-## Restrict analysis to a subset of the data
-FILTER=FALSE
-FILTER_SUBSET_PERCENT=2
-FILTER_DATA_ARE=[ continents ]
-FILTER_DATA_NOT=[ 3 ]
-# three filters: subset in percent
-# data_are
-# data_not
 
 ## Prepare csv for remotePARTS
 PREPCSV=FALSE
 
+FILTER=TRUE
+## Restrict analysis to a subset of the data
+USE_FILTERED=TRUE
+FILTER_SUBSET_PERCENT="0.01"
+MIN_CAT='continents' # Value from l. 26
+MIN_DATA_PER_CAT=20000
+USE_EX_INDICES=FALSE # Use existing index file
+
+# TODO IMPLEMENT
+#FILTER_DATA_ARE_CAT=[ 'continents' ] # Value from l 26
+#FILTER_DATA_ARE_CRIT=[ 1 ]
+#FILTER_DATA_NOT_CAT=[ 3 ]
+#FILTER_DATA_NOT_CRIT=[ 3 ]
+
 ## Generate partition matrix for complete dataset
-PARTITIONMATRIX=TRUE
+PARTITIONMATRIX=FALSE
 
 ## Split data into randomized partitions
 PARTITION=FALSE
@@ -205,17 +212,6 @@ if [ $MERGEINDEP == TRUE ] ; then
 	done
 fi
 
-if [ $FILTER == TRUE ] ; then
-#delete all filtered files
-###if FILTER ... filter by name/column and value, e.g. continent=2. eliminates all other values!
-# three filters: subset in percent
-# data_are
-# data_not
-	USE_FILTERED=TRUE
-fi
-
-USE_FILTERED=TRUE
-
 if [ $PREPCSV == TRUE ] ; then	
 	# Translate tif to csv
 	#ls $WORKDIR'/011_data/hii/v1/merged_ar_ind' | grep '_ind.tif' | parallel -j $jbs gdal2xyz.py -allbands $WORKDIR'/011_data/hii/v1/merged_ar_ind/'{} $WORKDIR'/011_data/hii/v1/merged_ar_ind/'{}'_temp.csv'
@@ -226,7 +222,9 @@ if [ $PREPCSV == TRUE ] ; then
 	# Remove originals
 	#ls $WORKDIR'/011_data/hii/v1/merged_ar_ind' | grep '_temp.csv\b' | parallel -j $jbs rm $WORKDIR'/011_data/hii/v1/merged_ar_ind/'{}
 	
-	parallel -j $jbs python3 $WORKDIR'/090_scripts/merge_in_columns_for_global_analysis.py' $WORKDIR'/011_data/hii/v1/merged_ar_ind/' $WORKDIR'/011_data/hii/v1/merged_ar_ind/global/' ::: "${indep_dir[@]}" :::+ "${indep_name[@]}"  :::+ "${index[@]}"
+	#parallel -j $jbs python3 $WORKDIR'/090_scripts/merge_in_columns_for_global_analysis.py' $WORKDIR'/011_data/hii/v1/merged_ar_ind/' $WORKDIR'/011_data/hii/v1/merged_ar_ind/global/' ::: "${indep_name[@]}"  :::+ "${index[@]}"
+	
+	parallel -j $jbs python3 $WORKDIR'/090_scripts/merge_in_columns_for_global_analysis.py' $WORKDIR'/011_data/hii/v1/merged_ar_ind/' $WORKDIR'/011_data/hii/v1/merged_ar_ind/global/' ::: "${ar_name[@]}"  :::+ "${ar_index[@]}"
 	
 	### Write Geotiff for one example tile for all datasets
 	#for p in $(seq 1 ${#indep_dir[@]}); do
@@ -236,10 +234,21 @@ if [ $PREPCSV == TRUE ] ; then
 	
 fi
 
-
+if [ $FILTER == TRUE ] ; then
+	if [ $FILTER_SUBSET_PERCENT != 0 ] ; then
+		python3 $WORKDIR'/090_scripts/filter_percent.py' $WORKDIR'/011_data/hii/v1/merged_ar_ind/global/' $FILTER_SUBSET_PERCENT $MIN_CAT $MIN_DATA_PER_CAT $USE_EX_INDICES
+	fi
+fi
 
 if [ $PARTITIONMATRIX == TRUE ] ; then
 	global_vrt_path=$WORKDIR'/011_data/hii/v1/merged_hii_ind.vrt'
+	
+	if [ $USE_FILTERED == TRUE ] ; then
+		file_path=$WORKDIR/011_data/hii/v1/merged_ar_ind/global/${indep_name[0]}_filtered.csv
+	else
+		file_path=$WORKDIR/011_data/hii/v1/merged_ar_ind/global/${indep_name[0]}.csv
+	fi
+	
 	pm_path=$WORKDIR'/011_data/parts/pm/global_partition'
 	partition_size=2000
 	max_col_per_part=8000
@@ -248,27 +257,23 @@ if [ $PARTITIONMATRIX == TRUE ] ; then
 	#gdalbuildvrt $global_vrt_path -input_file_list $WORKDIR'/011_data/hii/v1/list_temp.txt'
 	#rm $WORKDIR'/011_data/hii/v1/list_temp.txt'
 
-
-	
-
-	Rscript $WORKDIR'/090_scripts/parts_generate_pm.R' $global_vrt_path $pm_path $partition_size $max_col_per_part
-	
-	
-	gdal_translate -of xyz /data/FS_human_footprint/011_data/hii/v1/merged_hii_ind.vrt /data/FS_human_footprint/011_data/hii/v1/merged_hii_indtrans.txt
+	Rscript $WORKDIR'/090_scripts/parts_generate_pm.R' $file_path $pm_path $partition_size $max_col_per_part
 fi
 
 if [ $PARTITION == TRUE ] ; then
 	
+	loop through all partitions. feed partition path in script
+	#OBS
 	#Rscript $WORKDIR/090_scripts/parts_split_partitions.R  $WORKDIR/011_data/hii/v1/temp_obs/hii_global_reduced_subset_5million.csv $WORKDIR/011_data/parts/pm/pm_global_300m_5million.rds $WORKDIR/011_data/parts/pm/gls_300m_subpm/
 	
-	Rscript /data/FS_human_footprint/090_scripts/parts_split_partitions.R  /data/FS_human_footprint/011_data/hii/v1/temp_obs/hii_global_reduced_subset_5million.csv /data/FS_human_footprint/011_data/parts/pm/pm_global_300m_5million.rds /data/FS_human_footprint/011_data/parts/pm/gls_300m_subpm/
+	#OBS
+	#Rscript /data/FS_human_footprint/090_scripts/parts_split_partitions.R  /data/FS_human_footprint/011_data/hii/v1/temp_obs/hii_global_reduced_subset_5million.csv /data/FS_human_footprint/011_data/parts/pm/pm_global_300m_5million.rds /data/FS_human_footprint/011_data/parts/pm/gls_300m_subpm/
 	
-	#data_path=
-	#$WORKDIR'/011_data/parts/pm/global_partition.rds'
-	#pm_path=$WORKDIR'/011_data/parts/pm/global_partition.rds'
+	data_indir=$WORKDIR'/011_data/hii/v1/merged_ar_ind/global'
+	pm_path=$WORKDIR'/011_data/parts/pm/global_partition.rds'
 	#sub_pm_outdir=$WORKDIR'/011_data/parts/pm/'
 	
-	#Rscript $WORKDIR'/090_scripts/parts_split_partitions.R' $data_path $pm_path $sub_pm_outdir
+	Rscript $WORKDIR'/090_scripts/parts_split_partitions.R' $data_indir $pm_path $sub_pm_outdir
 fi
 
 #if [ $SPLITGLS == TRUE ] ; then
