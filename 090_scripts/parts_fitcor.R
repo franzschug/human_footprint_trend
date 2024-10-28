@@ -62,8 +62,9 @@ for (i in 1:iter) {
 	# ---- Spatial correlation among AR residuals ----
 	# Estimate spatial covariance parameter, range
 	fitted_spatialcor <- fitCor(resids = temporal_residuals, coords = as.matrix(ar_data[, coord_cols]),
-								  start = list(r = 0.01), fit.n = cor_fit_n, save_mod = FALSE)
+								  start = list(r = 0.01), distm_FUN = distm_km(), fit.n = cor_fit_n, save_mod = FALSE)
 		  
+	write(fitted_spatialcor$spcor,file=outFileSPCORS,append=TRUE)
 	write(fitted_spatialcor$spcor,file=outFileSPCORS,append=TRUE)
 	saveRDS(fitted_spatialcor, file = cor_save_file)
 }
