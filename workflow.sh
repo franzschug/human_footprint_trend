@@ -5,72 +5,66 @@ jbs=20
 ## Working directory
 WORKDIR='/data/FS_human_footprint'
 
-## Merge HII tiles from GG Earth Engine DL
+## Merge HII tiles from GG Earth Engine DL // does not apply to most recent version (global mosaics delivered by N. Robinson)!
 MERGEHII=FALSE
 
 ## Tile annual HII data to 5x5 degrees for faster IO
-TILE=FALSE
+TILEHII=FALSE
 
-## Stack annual HII clips time series
+## Stack annual time series of HII tiles 
 STACK=FALSE
 
-## Conduct pixel-wise trend analysis to time series stacks
+## Conduct pixel-wise trend analysis for time series stacks
 FITAR=FALSE
 
 ## Estimate  spatial autocorrelation parameters, range and nugget
 EST_AUTOCORR_PRM=FALSE
 
-## Prepare, tile independent variables
+## Prepare, tile independent variables (create tiles)
 PREPINDEP=FALSE
-indep_dir=( '011_data/countries' '011_data/dhi' '011_data/wdpa' '011_data/ecoregions' '011_data/species_richness' '011_data/species_richness' '011_data/species_richness' '011_data/species_richness' '011_data/species_richness' '011_data/species_richness' '011_data/species_richness' '011_data/species_richness' '011_data/wui' '011_data/gdp' '011_data/gdp' '011_data/gdp' '011_data/gdp' '011_data/continent' '011_data/biomes' ) 
-indep_name=( 'countries' 'cumDHI' 'wdpa_prox' 'ecoregions' 'sumTotalMammals_300' 'sumTotalBirds_300' 'sumTotalAmphibians_300' 'sumTotalReptiles_300' 'sumTotalMammals_crit_300' 'sumTotalBirds_crit_300' 'sumTotalAmphibians_crit_300' 'sumTotalReptiles_crit_300' 'global_wui_sum_Int16' 'gdp_1990' 'gdp_2015' 'gdp_change' 'gdp_rel_change' 'continents' 'biomes' )
-#col_names=( 'Long' 'Lat' 'coef' 'pval' 'country' 'cumdhi' 'wdpa' 'eco' 'mam' 'brid' 'amph' 'rept' 'wui' 'gdp90' 'gdp15' 'gdpch' 'gdprelch' 'contin' )
-index=( 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 )
+indep_dir=( '011_data/countries' '011_data/dhi' '011_data/wdpa' '011_data/ecoregions' '011_data/species_richness' '011_data/species_richness' '011_data/species_richness' '011_data/species_richness' '011_data/species_richness' '011_data/species_richness' '011_data/species_richness' '011_data/species_richness' '011_data/wui' '011_data/gdp' '011_data/gdp' '011_data/gdp' '011_data/gdp' '011_data/continent' '011_data/biomes' '011_data/wdpa' ) 
+indep_name=( 'countries' 'cumDHI' 'wdpa_prox' 'ecoregions' 'sumTotalMammals_300' 'sumTotalBirds_300' 'sumTotalAmphibians_300' 'sumTotalReptiles_300' 'sumTotalMammals_crit_300' 'sumTotalBirds_crit_300' 'sumTotalAmphibians_crit_300' 'sumTotalReptiles_crit_300' 'global_wui_sum_Int16' 'gdp_1990' 'gdp_2015' 'gdp_change' 'gdp_rel_change' 'continents' 'biomes' 'wdpa_categories' )
+index=( 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 )
 ar_name=( 'long' 'lat' 'coeff' 'pval' )
 ar_index=( 0 1 2 3 )
 	
-## Merge pixel-wise trend with independent variables
+## Merge pixel-wise trend layer with independent variables for tiles
 MERGEINDEP=FALSE
 
-## Prepare csv for remotePARTS
+## Prepare csv from stacked images for remotePARTS, remove nodata, organize global data by layer
 PREPCSV=FALSE
 
+## Extract a subset of the data (and split by continent)
 FILTER=FALSE
-## Restrict analysis to a subset of the data
-USE_FILTERED=TRUE
-FILTER_SUBSET_PERCENT="1"
-MIN_CAT='0' # Value from l. 26
-MIN_DATA_PER_CAT=20000
-INPUT_EXTENSION=''
-FILTER_CAT=''
-FILTER_VALUE=''
-USE_EX_INDICES=TRUE # Use existing index file
+CASE_NAME='continental' ## CASE_NAME will be used for all further analysis. E.g., 'global' for global analysis, and 'continental' for continental
+FILTER_SUBSET_PERCENT="100." # Float
+MIN_CAT='continents'
+SPLIT_BY_CAT=TRUE
 
-# TODO IMPLEMENT
-#FILTER_DATA_ARE_CAT=[ 'continents' ] # Value from l 26
-#FILTER_DATA_ARE_CRIT=[ 1 ]
-#FILTER_DATA_NOT_CAT=[ 3 ]
-#FILTER_DATA_NOT_CRIT=[ 3 ]
-
-## Generate partition matrix for complete dataset
+## Generate partition matrix
 PARTITIONMATRIX=FALSE
 WRITE_OPT_CSV=ALL #ALL, TEST, NONE
 
-## Split data into randomized partitions
+## Split data into randomized partitions following the partition matrix
 PARTITION=FALSE
 WRITE_OPT_CSV=ALL #ALL, TEST, NONE
 
 ## Perform split GLS
 SPLITGLS=TRUE
+PARTITIONS=15000 # Use a subset of partitions. 0 = Use all partitions.
+FORMULA='coeff~1+wdpa_prox+wdpa_prox*ecoregions' # e.g., 'coeff ~ 1', 'coeff~1+ecoregions+biomes+countries', 'coeff~1+wdpa_prox+wdpa_prox*ecoregions', 'coeff~1+wdpa_categories', 'coeff~1+wdpa_prox*ecoregions'
+FORMULA0='coeff~1' # e.g., 'coeff ~ 1'
+FORMID='wdpaprox' # For model id in file structure, e.g., '' for intercept-only
 
-## Analyse split GLS results
+## Perform GLS cross comparisons
+SPLITCROSS=FALSE
+NCROSSFILES=20
+
+## Analyse and merge split GLS results
 SPLITANALYSIS=FALSE
 
-## Merge split GLS results
-MERGERESULT=FALSE
 
 
-MAP_CHANGE=FALSE
 
 if [ $MERGEHII == TRUE ] ; then
 	years=( 2001 2002 2003 2004 2005 2006 2007 2008 2009 2010 2011 2012 2013 2014 2015 2016 2017 2018 2019 2020 )
@@ -80,7 +74,7 @@ if [ $MERGEHII == TRUE ] ; then
 	done
 fi
 
-if [ $TILE == TRUE ] ; then
+if [ $TILEHII == TRUE ] ; then
 	years=( 2001 2002 2003 2004 2005 2006 2007 2008 2009 2010 2011 2012 2013 2014 2015 2016 2017 2018 2019 2020 )
 
 	for (( COUNTERX=-180; COUNTERX<=175; COUNTERX+=5 )); do
@@ -89,7 +83,7 @@ if [ $TILE == TRUE ] ; then
 			xend=$(($COUNTERX+5))
 			yend=$(($COUNTERY-5))
 					
-			printf %s\\n "${years[@]}" | parallel --jobs $jbs gdal_translate -projwin $COUNTERX $COUNTERY $xend $yend -of VRT -a_nodata -32768 $WORKDIR'/010_raw_data/hii/v1/'{}'-01-01_hii_'{}'-01-01.vrt' $WORKDIR'/011_data/hii/v1/'{}'/hii_'$COUNTERX'_'$COUNTERY'.vrt'
+			printf %s\\n "${years[@]}" | parallel --jobs $jbs gdal_translate -projwin $COUNTERX $COUNTERY $xend $yend -of VRT -a_nodata -32768 $WORKDIR'/010_raw_data/hii/v1/hii_'{}'-01-01.tif' $WORKDIR'/011_data/hii/v1/'{}'/hii_'$COUNTERX'_'$COUNTERY'.vrt'
 		done
 	done
 fi
@@ -119,10 +113,12 @@ if [ $STACK == TRUE ] ; then
 			rm $WORKDIR'/011_data/hii/v1/00_stack/list_temp.txt'
 		done
 	done
+	
+	#gdalwarp '/data/FS_human_footprint/011_data/hii/v1/00_stack/hii_0_50.vrt' '/data/FS_human_footprint//011_data/hii/v1/00_stack/hii_0_50.tif'
 fi
 
 if [ $FITAR == TRUE ] ; then
-	for (( COUNTERX=-180; COUNTERX<=175; COUNTERX+=5 )); do
+	for (( COUNTERX=-65; COUNTERX<=175; COUNTERX+=5 )); do
 		for (( COUNTERY=90; COUNTERY>=-85; COUNTERY-=5 )); do
 			echo $COUNTERX
 			echo $COUNTERY
@@ -147,8 +143,8 @@ if [ $EST_AUTOCORR_PRM == TRUE ] ; then
 	dir=$WORKDIR'/011_data/hii/v1/ar_all/'
 	dirstack=$WORKDIR'/011_data/hii/v1/00_stack/'
 	
-	# Estiamte range parameter, shuf - shuffle, tail - last elements
-	ls $dir | grep .tif | shuf | tail -$sample_tiles | parallel -j $jbs Rscript $WORKDIR'/090_scripts/parts_fitcor.R' $dir $n_per_tile $iterations $outFileSPCORS $outDirSPCORS $extent {}
+	# Estimate range parameter, shuf - shuffle, tail - last elements
+	#ls $dir | grep .tif | shuf | tail -$sample_tiles | parallel -j $jbs Rscript $WORKDIR'/090_scripts/parts_fitcor.R' $dir $n_per_tile $iterations $outFileSPCORS $outDirSPCORS {}
 	
 	# Estimate nugget parameter
 	nr_samples=5000
@@ -156,8 +152,8 @@ if [ $EST_AUTOCORR_PRM == TRUE ] ; then
 	
 	#ls $dir | grep .tif | shuf |tail -$sample_tiles | parallel -j $jbs Rscript $WORKDIR'/090_scripts/parts_estimate_nugget.R' $dir $dirstack $nr_samples $outFileSPCORS $outFileNUGGET $save_dir {}
 	
-	#python3 $WORKDIR'/090_scripts/plots/00_distribution_range.py'
-	#python3 $WORKDIR'/090_scripts/plots/00_distribution_nugget.py'
+	python3 $WORKDIR'/090_scripts/plots/00_distribution_range.py'
+	python3 $WORKDIR'/090_scripts/plots/00_distribution_nugget.py'
 fi
 
 if [ $PREPINDEP == TRUE ] ; then
@@ -224,102 +220,202 @@ if [ $PREPCSV == TRUE ] ; then
 	# Translate tif to csv
 	#ls $WORKDIR'/011_data/hii/v1/merged_ar_ind' | grep '_ind.tif' | parallel -j $jbs gdal2xyz.py -allbands $WORKDIR'/011_data/hii/v1/merged_ar_ind/'{} $WORKDIR'/011_data/hii/v1/merged_ar_ind/'{}'_temp.csv'
 	
-	#combinedVars=("${ar_name[@]}" "${indep_name[@]}")
-	#namesStr=$(IFS=','; echo "${combinedVars[*]}")
+	combinedVars=("${ar_name[@]}" "${indep_name[@]}")
+	namesStr=$(IFS=','; echo "${combinedVars[*]}")
 	
 	# Remove no data lines
 	#ls $WORKDIR'/011_data/hii/v1/merged_ar_ind' | grep '_temp.csv' | parallel -j $jbs python3 $WORKDIR'/090_scripts/prep_csv_for_partGLS.py' $WORKDIR'/011_data/hii/v1/merged_ar_ind/'{} $WORKDIR'/011_data/hii/v1/merged_ar_ind/'{}'_nona.csv' $namesStr
-	
+
 	# Remove originals
 	#ls $WORKDIR'/011_data/hii/v1/merged_ar_ind' | grep '_temp.csv\b' | parallel -j $jbs rm $WORKDIR'/011_data/hii/v1/merged_ar_ind/'{}
-	
-	parallel -j $jbs python3 $WORKDIR'/090_scripts/merge_in_columns_for_global_analysis.py' $WORKDIR'/011_data/hii/v1/	d_ar_ind/' $WORKDIR'/011_data/hii/v1/merged_ar_ind/global/' ::: "${indep_name[@]}"  :::+ "${index[@]}"
+
+	#parallel -j $jbs python3 $WORKDIR'/090_scripts/merge_in_columns_for_global_analysis.py' $WORKDIR'/011_data/hii/v1/merged_ar_ind/' $WORKDIR'/011_data/hii/v1/merged_ar_ind/global/' ::: "${indep_name[@]}"  :::+ "${index[@]}"
 	
 	#parallel -j $jbs python3 $WORKDIR'/090_scripts/merge_in_columns_for_global_analysis.py' $WORKDIR'/011_data/hii/v1/merged_ar_ind/' $WORKDIR'/011_data/hii/v1/merged_ar_ind/global/' ::: "${ar_name[@]}"  :::+ "${ar_index[@]}"
 	
 	### Write Geotiff for one example tile for all datasets
 	#for p in $(seq 1 ${#indep_dir[@]}); do
 	#	i=$(($p - 1))
-	#	gdalwarp $WORKDIR'/'${indep_dir[$i]}'/tiles/'${indep_name[$i]}'_-95_40.vrt' $WORKDIR'/'${indep_dir[$i]}'/tiles/'${indep_name[$i]}'_-95_40.tif'
+	#	#gdalwarp $WORKDIR'/'${indep_dir[$i]}'/tiles/'${indep_name[$i]}'_-90_40.vrt' $WORKDIR'/'${indep_dir[$i]}'/tiles/'${indep_name[$i]}'_-90_40.tif'
+	#	gdalwarp '/data/FS_human_footprint/011_data/wui/tiles/global_wui_sum_Int16_-85_40.vrt' '/data/FS_human_footprint/011_data/wui/tiles/global_wui_sum_Int16_-85_40.tif'
 	#done
 	
 fi
 
 if [ $FILTER == TRUE ] ; then
 	if [ $FILTER_SUBSET_PERCENT != 0 ] ; then
-		python3 $WORKDIR'/090_scripts/filter_percent.py' $WORKDIR'/011_data/hii/v1/merged_ar_ind/global/' $FILTER_SUBSET_PERCENT $MIN_CAT $MIN_DATA_PER_CAT $USE_EX_INDICES
+		python3 $WORKDIR'/090_scripts/filter_percent.py' $WORKDIR'/011_data/hii/v1/merged_ar_ind/' $CASE_NAME $FILTER_SUBSET_PERCENT $MIN_CAT $SPLIT_BY_CAT 1
 	fi
 fi
 
 if [ $PARTITIONMATRIX == TRUE ] ; then
-	global_vrt_outpath=$WORKDIR'/011_data/hii/v1/merged_hii_ind.vrt'
 	
-	if [ $USE_FILTERED == TRUE ] ; then
-		file_path=$WORKDIR/011_data/hii/v1/merged_ar_ind/global/filtered_1pc/${indep_name[0]}.csv
-	else
-		file_path=$WORKDIR/011_data/hii/v1/merged_ar_ind/global/${indep_name[0]}.csv
-	fi
-	
-	pm_path=$WORKDIR'/011_data/parts/pm/filtered_1pc'
 	partition_size=2000
 	max_col_per_part=8000
 	
-	num_lines=$(wc -l < "$file_path")
-	#ls $WORKDIR'/011_data/hii/v1/merged_ar_ind/'*.tif > $WORKDIR'/011_data/hii/v1/list_temp.txt'			
-	#gdalbuildvrt $global_vrt_outpath -input_file_list $WORKDIR'/011_data/hii/v1/list_temp.txt'
-	#rm $WORKDIR'/011_data/hii/v1/list_temp.txt'
-	
-	Rscript $WORKDIR'/090_scripts/parts_generate_pm.R' $num_lines $pm_path $partition_size $max_col_per_part
+	# If multiple categories (continents)
+	if [ "$CASE_NAME" != "global" ]; then
+		mapfile -t lines < $WORKDIR'/011_data/hii/v1/merged_ar_ind/'$CASE_NAME'/categories.txt'
+
+		for line in "${lines[@]}"; do
+			echo "Processing line: $line"
+			file_path=$WORKDIR/011_data/hii/v1/merged_ar_ind/$CASE_NAME/${indep_name[0]}_$line.csv
+			pm_path=$WORKDIR'/011_data/parts/pm/'$CASE_NAME'_'$line'/'
+			num_lines=$(wc -l < "$file_path")
+			
+			echo $num_lines
+			Rscript $WORKDIR'/090_scripts/parts_generate_pm.R' $num_lines $pm_path $partition_size $max_col_per_part
+		done
+
+	# If only one category (global)
+	else
+		file_path=$WORKDIR/011_data/hii/v1/merged_ar_ind/$CASE_NAME/${indep_name[0]}.csv
+		pm_path=$WORKDIR'/011_data/parts/pm/'$CASE_NAME
+		num_lines=$(wc -l < "$file_path")
+		
+		echo $num_lines
+		Rscript $WORKDIR'/090_scripts/parts_generate_pm.R' $num_lines $pm_path $partition_size $max_col_per_part
+	fi
+
 fi
 
 if [ $PARTITION == TRUE ] ; then
-	
-	#file_extension=''
-	sub_pm_outdir=$WORKDIR'/011_data/parts/data/'
 
-	pm_paths=$(ls $WORKDIR/011_data/parts/pm/filtered_1pc/rds/global_partition_*)
-	directory='filtered_1pc'
+	# If multiple categories (continents)
+	if [ "$CASE_NAME" != "global" ]; then
+		mapfile -t lines < $WORKDIR'/011_data/hii/v1/merged_ar_ind/'$CASE_NAME'/categories.txt'
+		for line in "${lines[@]}"; do
+		
+			echo "Processing line: $line"
+			sub_pm_outdir=$WORKDIR'/011_data/parts/data/'$CASE_NAME'_'$line'/'
+			PM_PATH=$WORKDIR'/011_data/parts/pm/'$CASE_NAME'_'$line'/rds/global_partition' # Path to partition data
+			pm_paths=$(ls $PM_PATH'_'*)
+			
+			combinedVars=("${ar_name[@]}" "${indep_name[@]}")
+			namesStr=$(IFS=','; echo "${combinedVars[*]}")
+			
+			parallel -j 5 Rscript $WORKDIR'/090_scripts/parts_split_partitions.R' $WORKDIR'/011_data/hii/v1/merged_ar_ind/'$CASE_NAME'/' $namesStr $line $sub_pm_outdir ::: "${pm_paths[@]}"
 
-	combinedVars=("${ar_name[@]}" "${indep_name[@]}")
-	namesStr=$(IFS=','; echo "${combinedVars[*]}")
-	
-	for path in $pm_paths; do
-		echo $path
-		Rscript $WORKDIR'/090_scripts/parts_split_partitions.R' $WORKDIR'/011_data/hii/v1/merged_ar_ind/global/'$directory'/' $path $namesStr $sub_pm_outdir $directory
-	done
+		done
+		
+	# If only one category (global)
+	else
+		sub_pm_outdir=$WORKDIR'/011_data/parts/data/'$CASE_NAME'/'
+		PM_PATH=$WORKDIR'/011_data/parts/pm/'$CASE_NAME'/rds/global_partition' # Path to partition data
+		pm_paths=$(ls $PM_PATH'_'*)
 
-	# TODO For filter, use file extension from previous block
+		combinedVars=("${ar_name[@]}" "${indep_name[@]}")
+		namesStr=$(IFS=','; echo "${combinedVars[*]}")
 	
+		parallel -j 5 Rscript $WORKDIR'/090_scripts/parts_split_partitions.R' $WORKDIR'/011_data/hii/v1/merged_ar_ind/'$CASE_NAME'/' $namesStr '' $sub_pm_outdir ::: "${pm_paths[@]}"
+	fi
+
 fi
 
-#if [ $SPLITGLS == TRUE ] ; then
-#perform vif and warn!
-#print if vif high
-#	confirmVIF=TRUE # If independent variables highly correlated accoding to VIF, stop to confirm
-#	
-#fi
 
-#if [ $SPLITANALYSIS == TRUE ] ; then
-#
-#fi
-#
-#
-#if [ $MERGERESULT == TRUE ] ; then
-#
-#fi
+if [ $SPLITGLS == TRUE ] ; then
 
-	
-		
-#- output correlation matrix, variance inflation factor test. then select!
-# write vif new - with subset of the data
-
-
-
-
-if [ $MAP_CHANGE == TRUE ] ; then
-	for (( COUNTERX=-180; COUNTERX<=175; COUNTERX+=5 )); do
-		for (( COUNTERY=90; COUNTERY>=-85; COUNTERY-=5 )); do
-			python3 $WORKDIR'/090_scripts/00_change/001_zonal_stats_hii_total.py' $COUNTERX $COUNTERY
+	if [ "$CASE_NAME" != "global" ]; then # continental case
+		mapfile -t lines < $WORKDIR'/011_data/hii/v1/merged_ar_ind/'$CASE_NAME'/categories.txt'
+		for line in "${lines[@]}"; do
+			
+			echo "Processing line: $line"
+			if [ "$PARTITIONS" != 0 ]; then
+				ls -p $WORKDIR/011_data/parts/data/$CASE_NAME'_'$line'/rds/' | grep -v / | shuf | head -n $PARTITIONS > $WORKDIR/011_data/parts/data/$CASE_NAME'_'$line/filelist.txt
+				
+			else
+				ls $WORKDIR/011_data/parts/data/$CASE_NAME'_'$line/rds/ > $WORKDIR/011_data/parts/data/$CASE_NAME'_'$line'/filelist.txt'
+			fi
+			
+			parallel -a $WORKDIR/011_data/parts/data/$CASE_NAME'_'$line/filelist.txt -j $jbs Rscript $WORKDIR'/090_scripts/parts_split_gls.R' $WORKDIR'/011_data/parts/data/'$CASE_NAME'_'$line'/rds/' $WORKDIR'/011_data/parts/alls_spcors_abs.txt' $WORKDIR'/011_data/parts/alls_nuggets.txt' $WORKDIR'/011_data/parts/gls_split/'$CASE_NAME'_'$line'_'$FORMID'/' $FORMULA $FORMULA0 {}
 		done
-	done
+		
+	else # global case
+		if [ "$PARTITIONS" != 0 ]; then
+			ls -p $WORKDIR/011_data/parts/data/$CASE_NAME/rds/ | grep -v / | shuf | head -n $PARTITIONS > $WORKDIR/011_data/parts/data/$CASE_NAME/filelist.txt
+		else
+			ls $WORKDIR/011_data/parts/data/$CASE_NAME/rds/ > $WORKDIR/011_data/parts/data/$CASE_NAME/filelist.txt
+		fi
+		
+		parallel -a $WORKDIR/011_data/parts/data/$CASE_NAME/filelist.txt -j $jbs Rscript $WORKDIR'/090_scripts/parts_split_gls.R' $WORKDIR'/011_data/parts/data/'$CASE_NAME'/rds/' $WORKDIR'/011_data/parts/alls_spcors_abs.txt' $WORKDIR'/011_data/parts/alls_nuggets.txt' $WORKDIR'/011_data/parts/gls_split/'$CASE_NAME'/' $FORMULA $FORMULA0 {}
+	fi
+fi
+
+if [ $SPLITCROSS == TRUE ] ; then
+
+	## Randomly select nfiles*2 pairs of GLS results
+	NCROSSFILES=20 # Desired pairs / 2
+	
+	if [ "$CASE_NAME" != "global" ]; then # continental case
+		mapfile -t lines < $WORKDIR'/011_data/hii/v1/merged_ar_ind/'$CASE_NAME'/categories.txt'
+		for line in "${lines[@]}"; do
+		
+			echo "Processing line: $line"
+			folder=$WORKDIR'/011_data/parts/gls_split/'$CASE_NAME'_'$line'_'$FORMID'/'
+			output_file=$WORKDIR'/011_data/parts/gls_cross/'$CASE_NAME'_'$line'_'$FORMID'.txt'
+			echo $folder
+			echo $output_file
+			
+			# List all files in the folder, shuffle them, and select the first nfiles files
+			files=($(ls "$folder" | shuf | head -n $NCROSSFILES))
+			
+			# Check if there are at least NCROSSFILES files to form NCROSSFILES*2 pairs
+			if [ ${#files[@]} -lt $NCROSSFILES ]; then
+			  echo "Not enough files to form pairs."
+			  exit 1
+			fi
+			
+			# Loop through the files and create pairs
+			for ((i=0; i<${#files[@]}; i+=2)); do
+				# Check if there is a next file to pair with
+				if ((i + 1 < ${#files[@]})); then
+					echo "${files[i]} ${files[i+1]}" >> $output_file
+				else
+					# If there's an odd number of files, the last file won't be paired
+					echo "${files[i]}" >> $output_file
+				fi
+			done
+			
+			parallel -a $output_file -j $jbs Rscript $WORKDIR'/090_scripts/parts_split_cross.R' $WORKDIR'/011_data/parts/gls_split/'$CASE_NAME'_'$line'_'$FORMID'/' {} $WORKDIR'/011_data/parts/data/'$CASE_NAME'_'$line'/rds/' $WORKDIR'/011_data/parts/gls_cross/'$CASE_NAME'_'$line'_'$FORMID'/' $WORKDIR'/011_data/parts/alls_spcors_abs.txt'
+
+		done
+		
+	else # global case
+		folder=$WORKDIR'/011_data/parts/gls_split/'$CASE_NAME'/'
+		output_file=$WORKDIR'/011_data/parts/gls_cross/'$CASE_NAME'.txt'	
+		
+		# List all files in the folder, shuffle them, and select the first nfiles files
+		files=($(ls "$folder" | shuf | head -n $NCROSSFILES))
+		
+		# Check if there are at least NCROSSFILES files to form NCROSSFILES*2 pairs
+		if [ ${#files[@]} -lt $NCROSSFILES ]; then
+		  echo "Not enough files to form pairs."
+		  exit 1
+		fi
+		
+		# Loop through the files and create pairs
+		for ((i=0; i<${#files[@]}; i+=2)); do
+			# Check if there is a next file to pair with
+			if ((i + 1 < ${#files[@]})); then
+				echo "${files[i]} ${files[i+1]}" >> $output_file
+			else
+				# If there's an odd number of files, the last file won't be paired
+				echo "${files[i]}" >> $output_file
+			fi
+		done
+	
+		parallel -a $output_file -j $jbs Rscript $WORKDIR'/090_scripts/parts_split_cross.R' $WORKDIR'/011_data/parts/gls_split/'$CASE_NAME'/' {} $WORKDIR'/011_data/parts/data/'$CASE_NAME'/rds/' $WORKDIR'/011_data/parts/gls_cross/'$CASE_NAME'/' $WORKDIR'/011_data/parts/alls_spcors_abs.txt'
+
+	fi
+fi
+
+if [ $SPLITANALYSIS == TRUE ] ; then
+	
+	SUBSET_GLS=50
+	SUBSET_PAIRS=50
+	Rscript '/data/FS_human_footprint/090_scripts/parts_split_analysis.R' '/data/FS_human_footprint/011_data/parts/gls_split/' '/data/FS_human_footprint/011_data/parts/gls_cross/global/' '/data/FS_human_footprint/011_data/parts/gls_analysis/out_global.rds' $SUBSET_GLS $SUBSET_PAIRS
+	
+	#use reference levels file
+	Rscript '/data/FS_human_footprint/090_scripts/parts_split_analysis.R' '/data/FS_human_footprint/011_data/parts/gls_split/continental_2_ecobiocnt/' '/data/FS_human_footprint/011_data/parts/gls_cross/continental_2_ecobiocnt/' '/data/FS_human_footprint/011_data/parts/gls_analysis/test.rds' '/data/FS_human_footprint/011_data/parts/gls_analysis/levels_reference.txt' 1 0
+	
 fi

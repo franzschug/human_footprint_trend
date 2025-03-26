@@ -29,19 +29,20 @@ library(raster)
 
 args = commandArgs(trailingOnly=TRUE)
 
-if (length(args)!=6) {
-  stop("Six arguments expected.n", call.=FALSE)
+if (length(args)!=7) {
+  stop("Seven arguments expected.n", call.=FALSE)
 } else {
   dir = args[1]
   n_per_tile = args[2]
   iter = args[3]
   outFileSPCORS = args[4]
   outDirSPCORS = args[5]
-  img_tile = args[6]
+  extent = args[6]
+  img_tile = args[7]
 }
 
 img_path = paste(dir, img_tile, sep="")
-
+print(img_path)
 # ____ Setup ____
 coord_cols = 1:2
 cor_fit_n = n_per_tile
@@ -56,17 +57,20 @@ for (i in 1:iter) {
 
 	img_rst = stack(img_path)
 	ar_data = raster::as.data.frame(img_rst,xy=TRUE)
-	
-	temporal_residuals = as.matrix(ar_data[, -c(1,2)])
+	percent_na <- sum(rowSums(is.na(ar_data)) > 0) / nrow(ar_data) * 100
 
-	# ---- Spatial correlation among AR residuals ----
-	# Estimate spatial covariance parameter, range
-	fitted_spatialcor <- fitCor(resids = temporal_residuals, coords = as.matrix(ar_data[, coord_cols]),
-								  start = list(r = 0.01), distm_FUN = distm_km(), fit.n = cor_fit_n, save_mod = FALSE)
-		  
-	write(fitted_spatialcor$spcor,file=outFileSPCORS,append=TRUE)
-	write(fitted_spatialcor$spcor,file=outFileSPCORS,append=TRUE)
-	saveRDS(fitted_spatialcor, file = cor_save_file)
+	## Exlclude tiles where > 70% of the data are NA
+	if(percent_na < 70) {
+		temporal_residuals = as.matrix(ar_data[, -c(1,2)])
+
+		# ---- Spatial correlation among AR residuals ----
+		# Estimate spatial covariance parameter, range
+		fitted_spatialcor <- fitCor(resids = temporal_residuals, coords = as.matrix(ar_data[, coord_cols]),
+									  start = list(r = 0.01), fit.n = cor_fit_n, save_mod = FALSE)
+			  
+		write(fitted_spatialcor$spcor * as.numeric(extent),file=outFileSPCORS,append=TRUE)
+		saveRDS(fitted_spatialcor, file = cor_save_file)
+	}
 }
 
 print(paste('fitCor time:', Sys.time() - START_TIME))

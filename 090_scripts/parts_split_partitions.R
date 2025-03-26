@@ -1,125 +1,99 @@
+
+#+
+# :AUTHOR: Franz Schug [fschug@wisc.edu], support and advice Clay. J. Morrow (https://github.com/morrowcj)
+# :DATE: 16 Sep. 2024
+#
+# :Description: Splits full dataset into partitions as described in the partition matrix for more efficient processing.
+
+# :Parameters:  data_path - working directory
+#               pm_load_file - path to existing partition matrix
+#               sub_pm_outdir - directory to save partitions
+#
+## remotePARTS documentation
+# (1) https://github.com/morrowcj/remotePARTS
+#
+## remotePARTS publication
+# (1) A. ives, L. Zhu, F. Wang, J. Zhu, C. Morrow, V. Radeloff, 2021, Statistical inference for trends in spatiotemporal data, Remote Sensing of Environment, doi: 10.1016/j.rse.2021.112678
+#
+# Use at own risk.
+
+
 # Add local R library to this project
 .libPaths(unique("R_library", .libPaths()))
 
 library(remotePARTS)
+library(data.table)
 
 args = commandArgs(trailingOnly=TRUE)
 
-# test for arguments
-if (length(args)!=3) {
-  stop("Three arguments expected.n", call.=FALSE)
+if (length(args)!=5) {
+  stop("Five arguments expected.n", call.=FALSE)
 } else {
-  pathToData = args[1]
-  pm_save_file = args[2]
-  sub_pm_outdir = args[3]
+  data_indir = args[1]
+  vars = unlist(strsplit(args[2], ","))
+  categ = args[3]
+  sub_pm_outdir = args[4]
+  pm_load_file = args[5]
 }
 
-#print(file)
+
 START_TIME = Sys.time()
 
-# ____ Setup ____
-coord_cols = 1:2  # column numbers containing annual residuals
-resid_cols = 5:24  # column numbers containing annual residuals
-core_num = 44
-partition_size = 2000 # pixels per partition for GLS
+partition_matrix = readRDS(pm_load_file)
 
-path = pathToData
-ddt <- read.csv(path, header = TRUE, sep = ",")
+pm_df = as.data.frame(partition_matrix)
+#print(is.data.frame(pmn))
+#print(is.data.frame(partition_matrix))
 
-ar_data = read.csv(pathToData, na.strings = "NA", header=TRUE, sep=',')
+#print(nrow(pmn))
+#print(ncol(pmn))
 
-print(head(ddt))
+list_of_partitions <- vector("list", length = ncol(pm_df))
 
+for (j in 1:ncol(pm_df)) {
+	partition_data <- vector("list", length = length(vars))
+	list_of_partitions[[j]] <- partition_data
+}	
 
-## generate or load partition matrix of the complete dataset
-#partition_matrix = sample_partitions(npix = nrow(ar_data), partsize = partition_size, npart = NA)
-#saveRDS(partition_matrix, file = pm_save_file)
-
-## define maximum number of data in a file
-max_per_part = 2000000 # multiple of row size 2000
-
-## split data into files based on partition matrix indices
-start_t = Sys.time()
-partition_matrix = readRDS(pm_save_file)
-#print(head(partition_matrix))
-#print(length(partition_matrix))
-#print(length(partition_matrix$part.3306))
-#print(max(partition_matrix))
-#print(dim(partition_matrix))
-#print(dim(partition_matrix[1]))
-#print(dim(partition_matrix[2]))
-
-nbr_of_files = ceiling((dim(partition_matrix)[1] * dim(partition_matrix)[2]) / max_per_part)
-#print((nbr_of_files))
-
-for (i in 1:nbr_of_files) {
-  firstCol = i+((i-1)*(max_per_part / nrow(partition_matrix)))
-
-  if(i < nbr_of_files) {
-  lastCol = firstCol + 	((max_per_part / nrow(partition_matrix))) - 1
-  } else {
-  lastCol = ncol(partition_matrix) - 1
-  }
-
-  tempPM = partition_matrix[,firstCol:lastCol]
-  #print(head(tempPM))
-  #print(dim(tempPM))
-  #print(dim(ddt))
-  #print(typeof(ddt))
-  #print(ddt[:,1])
-
-  #copy data for each partition incl. lon/lat and coeff
-  
-  # empty dataframe with ncol = partitions
-  #tempData <- as.data.frame(matrix(ncol=ncol(tempPM), nrow=0))
-  tempData = list()
- 
-  for (k in 1:ncol(tempPM)) {
-	#print(k)
-	#print(tempPM[,k])
-	#print(length(tempPM[,k]))
+for (f in 1:length(vars)) {
+	inVarPath = paste0(data_indir,vars[f],'_',categ,'.csv')
+	#print(inVarPath)
+	extp = fread(inVarPath)
+	#print("var loaded")
 	
-	#print(c(tempPM[,k]))
-	# select all rows at all indices in current partition
-	#tempData[,k] = ddt[c(tempPM[k]),]
-	
-	#print(ddt[c(tempPM[k]),])
-	#print(typeof(ddt[c(tempPM[k]),]))
-	#print(length(ddt[c(s[k]),]))
-	#print(list(ddt[c(tempPM[k]),]))
-	#print(length(list(ddt[c(tempPM[k]),])))
-	#tempData[k] = list()
-	#tempData[k] <- c(tempData[k], ddt[c(tempPM[k]),])
-	#print(ddt[c(tempPM[k]),])
-	#print(length(ddt[c(tempPM[k]),]))
-	
+	for (i in 1:ncol(pm_df)) {
+	#for (i in 1:1) {
+		colindex = colnames(partition_matrix)[i]
+		#print(colindex)
 
-	tL = list()
+		#print(pm_df[[i]])
+		values = extp[pm_df[[i]], ]  # extract all values from variable at indices provided in partition_matrix
+		#print(values)
+		list_of_partitions[[i]][[f]] = values
+	}
+}
 
-	tL = ddt[c(tempPM[,k]),]
+outDir = paste0(sub_pm_outdir)
+# Create the directory if it doesn't exist
 
+if (!dir.exists(paste0(sub_pm_outdir, '/rds/'))) {
+  dir.create(paste0(sub_pm_outdir, '/rds/'), recursive = TRUE)
+}
 
-	#tL[2] = ddt[c(tempPM[,k]),2]
-	#tL[3] = ddt[c(tempPM[,k]),3]
-	#tempData <- c(tempData, tL)
-	tempData[[length(tempData)+1]] <- tL
+if (!dir.exists(paste0(sub_pm_outdir, '/csv/'))) {
+  dir.create(paste0(sub_pm_outdir, '/csv/'), recursive = TRUE)
+}
 
-  }
+for (i in 1:ncol(pm_df)) {
+#for (i in 1:1) {
+	colindex = colnames(partition_matrix)[i]
 
-  print("length")
-  #print(length(tempData))
-  # prints all coefficients (col 3) in partition 5
-  #print((tempData[[5]][3]))
+	df1 <- do.call(cbind, lapply(list_of_partitions[[i]], as.data.frame))
+	colnames(df1) <- vars
 
+	outPath = paste0(sub_pm_outdir, '/rds/', 'data_', colindex , '.rds')
+	outPathCSV = paste0(sub_pm_outdir, '/csv/', 'data_', colindex , '.csv')
 
-  outFile = paste(sub_pm_outdir, 'rds/sub_pmatrix_', i, '.rds', sep = "", collapse = NULL)
-  outFile2 = paste(sub_pm_outdir, 'sub_pmatrix_', i, '.csv', sep = "", collapse = NULL)
-  outFile3 = paste(sub_pm_outdir, 'rds/sub_partition_data_', i, '.rds', sep = "", collapse = NULL)
-  outFile4 = paste(sub_pm_outdir, 'sub_partition_data_', i, '.csv', sep = "", collapse = NULL)
-  saveRDS(tempPM, file = outFile)
-  saveRDS(tempData, file = outFile3)
-  write.csv(tempPM, outFile2, row.names=FALSE)
-  write.csv(tempData, outFile4, row.names=FALSE)
-} 
-
-#print(Sys.time() - start_t)
+	saveRDS(df1, outPath)
+	write.csv(df1, outPathCSV, row.names = FALSE)
+}

@@ -29,7 +29,6 @@ library(remotePARTS)
 library(raster)
 library(doParallel)
 library(foreach)
-registerDoParallel(core_num)
 
 args = commandArgs(trailingOnly=TRUE)
 
@@ -42,7 +41,7 @@ if (length(args)!=3) {
 }
 
 print(paste(counterx, '_', countery))
-source(paste(working_dir, "/090_scripts/code/helper-functions.R"))  # loads helper functions including the iterator iblkrow()
+source(paste0(working_dir, "/090_scripts/code/helper-functions.R"))  # loads helper functions including the iterator iblkrow()
 
 # ____ Setup ____
 batch_name = paste("global_300", counterx, "_", countery, sep="")
@@ -54,9 +53,10 @@ AR_save_file = file.path(out_dir, paste0("fitted_AR_", batch_name, ".rds"))
 coord_cols = c(1, 2)  # column numbers for coordinates
 data_cols = 3:22  # column numbers containing time series data
 core_num = 40 # number of cores to use
+registerDoParallel(core_num)
 # ____ End Setup ____
 
-START_TIME = Sys.time()
+START_WRITE_TIME = Sys.time()
 
 img_rst = stack(img_path)
 xres = xres(img_rst)
@@ -112,6 +112,6 @@ t_write = Sys.time() - START_WRITE_TIME
 # Save Processing time
 rw <- data.frame('Start', t_start, 'AR', t_ar, 'Write', t_write) 
 p_time_path = paste(working_dir, "/014_results/t_ar_processing.csv", sep="")
-write.table(rw, file = csv_fname, sep = ",", append = TRUE, quote = FALSE, col.names = FALSE, row.names = FALSE) 
+write.table(rw, file = p_time_path, sep = ",", append = TRUE, quote = FALSE, col.names = FALSE, row.names = FALSE) 
 
 # ---------- END MULTICORE VERSION ----------
