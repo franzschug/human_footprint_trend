@@ -113,12 +113,11 @@ if [ $STACK == TRUE ] ; then
 			rm $WORKDIR'/011_data/hii/v1/00_stack/list_temp.txt'
 		done
 	done
-	
-	#gdalwarp '/data/FS_human_footprint/011_data/hii/v1/00_stack/hii_0_50.vrt' '/data/FS_human_footprint//011_data/hii/v1/00_stack/hii_0_50.tif'
+
 fi
 
 if [ $FITAR == TRUE ] ; then
-	for (( COUNTERX=-65; COUNTERX<=175; COUNTERX+=5 )); do
+	for (( COUNTERX=-180; COUNTERX<=175; COUNTERX+=5 )); do
 		for (( COUNTERY=90; COUNTERY>=-85; COUNTERY-=5 )); do
 			echo $COUNTERX
 			echo $COUNTERY
