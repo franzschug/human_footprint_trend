@@ -1,9 +1,6 @@
 #!/bin/bash
 
-jbs=20
-
-
-Rscript '/data/FS_human_footprint/090_scripts/parts_split_cross.R' '/data/FS_human_footprint/011_data/parts/gls_split/continental_2_ecobiocnt/' 'data_part.60557.rds data_part.106209.rds' '/data/FS_human_footprint/011_data/parts/data/continental_2/rds/' '/data/FS_human_footprint/011_data/parts/gls_cross/continental_2_ecobiocnt/' '/data/FS_human_footprint/011_data/parts/alls_spcors_abs.txt'
+jbs=10
 
 ## Working directory
 WORKDIR='/data/FS_human_footprint'
@@ -46,6 +43,8 @@ SPLIT_BY_CAT=TRUE
 
 ## Generate partition matrix
 PARTITIONMATRIX=FALSE
+PARTSIZE=2000
+COLPERPART=8000
 WRITE_OPT_CSV=ALL #ALL, TEST, NONE
 
 ## Split data into randomized partitions following the partition matrix
@@ -57,14 +56,15 @@ SPLITGLS=FALSE
 PARTITIONS=15000 # Use a subset of partitions. 0 = Use all partitions.
 FORMULA='coeff~1+wdpa_prox+wdpa_prox*ecoregions' # e.g., 'coeff ~ 1', 'coeff~1+ecoregions+biomes+countries', 'coeff~1+wdpa_prox+wdpa_prox*ecoregions', 'coeff~1+wdpa_categories', 'coeff~1+wdpa_prox*ecoregions'
 FORMULA0='coeff~1' # e.g., 'coeff ~ 1'
-FORMID='ecobiocnt' # For model id in file structure, e.g., '' for intercept-only
+#FORMID='wdpaprox' # For model id in file structure, e.g., '' for intercept-only
+FORMID='' # For model id in file structure, e.g., '' for intercept-only
 
 ## Perform GLS cross comparisons
-SPLITCROSS=TRUE
-NCROSSFILES=1
+SPLITCROSS=FALSE
+NCROSSFILES=20  # Desired pairs / 2
 
 ## Analyse and merge split GLS results
-SPLITANALYSIS=FALSE
+SPLITANALYSIS=TRUE
 
 
 
@@ -116,12 +116,11 @@ if [ $STACK == TRUE ] ; then
 			rm $WORKDIR'/011_data/hii/v1/00_stack/list_temp.txt'
 		done
 	done
-	
-	#gdalwarp '/data/FS_human_footprint/011_data/hii/v1/00_stack/hii_0_50.vrt' '/data/FS_human_footprint//011_data/hii/v1/00_stack/hii_0_50.tif'
+
 fi
 
 if [ $FITAR == TRUE ] ; then
-	for (( COUNTERX=-65; COUNTERX<=175; COUNTERX+=5 )); do
+	for (( COUNTERX=-180; COUNTERX<=175; COUNTERX+=5 )); do
 		for (( COUNTERY=90; COUNTERY>=-85; COUNTERY-=5 )); do
 			echo $COUNTERX
 			echo $COUNTERY
@@ -247,106 +246,111 @@ fi
 
 if [ $FILTER == TRUE ] ; then
 	if [ $FILTER_SUBSET_PERCENT != 0 ] ; then
-		
-		#total_lines=$(wc -l < input.csv)
-		#half_lines=$((total_lines / 2))
-		#shuf -n $half_lines input.csv > output.csv
-		
-		python3 $WORKDIR'/090_scripts/filter_percent.py' $WORKDIR'/011_data/hii/v1/merged_ar_ind/global/' $CASE_NAME $FILTER_SUBSET_PERCENT $MIN_CAT $MIN_DATA_PER_CAT $SPLIT_BY_CAT
+		python3 $WORKDIR'/090_scripts/filter_percent.py' $WORKDIR'/011_data/hii/v1/merged_ar_ind/' $CASE_NAME $FILTER_SUBSET_PERCENT $MIN_CAT $SPLIT_BY_CAT 1
 	fi
 fi
 
 if [ $PARTITIONMATRIX == TRUE ] ; then
-	global_vrt_outpath=$WORKDIR'/011_data/hii/v1/merged_hii_ind.vrt'
-	
-	#if [ $USE_FILTERED == TRUE ] ; then
-	#	file_path=$WORKDIR/011_data/hii/v1/merged_ar_ind/global/filtered_1pc/${indep_name[0]}.csv
-	#else
-	#	file_path=$WORKDIR/011_data/hii/v1/merged_ar_ind/global/${indep_name[0]}.csv
-	#fi
-	
-	# todo, if more than 1 file per name type, loop and save to individual folders
-	file_path=$WORKDIR/011_data/hii/v1/merged_ar_ind/$CASE_NAME/${indep_name[0]}.csv
-	#continents_1pc
-	pm_path=$WORKDIR'/011_data/parts/pm/'$CASE_NAME
-	partition_size=2000
-	max_col_per_part=8000
-	
-	num_lines=$(wc -l < "$file_path")
-	#ls $WORKDIR'/011_data/hii/v1/merged_ar_ind/'*.tif > $WORKDIR'/011_data/hii/v1/list_temp.txt'			
-	#gdalbuildvrt $global_vrt_outpath -input_file_list $WORKDIR'/011_data/hii/v1/list_temp.txt'
-	#rm $WORKDIR'/011_data/hii/v1/list_temp.txt'
-	
-	Rscript $WORKDIR'/090_scripts/parts_generate_pm.R' $num_lines $pm_path $partition_size $max_col_per_part
+		
+	# If multiple categories (continents)
+	if [ "$CASE_NAME" != "global" ]; then
+		mapfile -t lines < $WORKDIR'/011_data/hii/v1/merged_ar_ind/'$CASE_NAME'/categories.txt'
+
+		for line in "${lines[@]}"; do
+			echo "Processing line: $line"
+			file_path=$WORKDIR/011_data/hii/v1/merged_ar_ind/$CASE_NAME/${indep_name[0]}_$line.csv
+			pm_path=$WORKDIR'/011_data/parts/pm/'$CASE_NAME'_'$line'/'
+			num_lines=$(wc -l < "$file_path")
+			
+			echo $num_lines
+			Rscript $WORKDIR'/090_scripts/parts_generate_pm.R' $num_lines $pm_path $PARTSIZE $COLPERPART
+		done
+
+	# If only one category (global)
+	else
+		file_path=$WORKDIR/011_data/hii/v1/merged_ar_ind/$CASE_NAME/${indep_name[0]}.csv
+		pm_path=$WORKDIR'/011_data/parts/pm/'$CASE_NAME
+		num_lines=$(wc -l < "$file_path")
+		
+		echo $num_lines
+		Rscript $WORKDIR'/090_scripts/parts_generate_pm.R' $num_lines $pm_path $PARTSIZE $COLPERPART
+	fi
+
 fi
 
 if [ $PARTITION == TRUE ] ; then
 
-	#file_extension=''
-	sub_pm_outdir=$WORKDIR'/011_data/parts/data/'$CASE_NAME'/'
-	PM_PATH=$WORKDIR'/011_data/parts/pm/'$CASE_NAME'/rds/global_partition' # Path to partition data
-	pm_paths=$(ls $PM_PATH'_'*)
+	# If multiple categories (continents)
+	if [ "$CASE_NAME" != "global" ]; then
+		mapfile -t lines < $WORKDIR'/011_data/hii/v1/merged_ar_ind/'$CASE_NAME'/categories.txt'
+		for line in "${lines[@]}"; do
+		
+			echo "Processing line: $line"
+			sub_pm_outdir=$WORKDIR'/011_data/parts/data/'$CASE_NAME'_'$line'/'
+			PM_PATH=$WORKDIR'/011_data/parts/pm/'$CASE_NAME'_'$line'/rds/global_partition' # Path to partition data
+			pm_paths=$(ls $PM_PATH'_'*)
+			
+			combinedVars=("${ar_name[@]}" "${indep_name[@]}")
+			namesStr=$(IFS=','; echo "${combinedVars[*]}")
+			
+			parallel -j 5 Rscript $WORKDIR'/090_scripts/parts_split_partitions.R' $WORKDIR'/011_data/hii/v1/merged_ar_ind/'$CASE_NAME'/' $namesStr $line $sub_pm_outdir ::: "${pm_paths[@]}"
 
-	combinedVars=("${ar_name[@]}" "${indep_name[@]}")
-	namesStr=$(IFS=','; echo "${combinedVars[*]}")
+		done
+		
+	# If only one category (global)
+	else
+		sub_pm_outdir=$WORKDIR'/011_data/parts/data/'$CASE_NAME'/'
+		PM_PATH=$WORKDIR'/011_data/parts/pm/'$CASE_NAME'/rds/global_partition' # Path to partition data
+		pm_paths=$(ls $PM_PATH'_'*)
+
+		combinedVars=("${ar_name[@]}" "${indep_name[@]}")
+		namesStr=$(IFS=','; echo "${combinedVars[*]}")
 	
-	parallel -j 5 Rscript $WORKDIR'/090_scripts/parts_split_partitions.R' $WORKDIR'/011_data/hii/v1/merged_ar_ind/'$CASE_NAME'/' $namesStr $sub_pm_outdir ::: "${pm_paths[@]}"
+		parallel -j 5 Rscript $WORKDIR'/090_scripts/parts_split_partitions.R' $WORKDIR'/011_data/hii/v1/merged_ar_ind/'$CASE_NAME'/' $namesStr '' $sub_pm_outdir ::: "${pm_paths[@]}"
+	fi
 
-
-	#for path in $pm_paths; do
-	#	echo $path
-	#	Rscript $WORKDIR'/090_scripts/parts_split_partitions.R' $WORKDIR'/011_data/hii/v1/merged_ar_ind/'$CASE_NAME'/' $path $namesStr $sub_pm_outdir
-	#done
-
-	# TODO For filter, use file extension from previous block
-	
 fi
 
-
-if [ $CHECK_VIF == TRUE ] ; then
-
-	PM_PATH=$WORKDIR'/011_data/parts/data/rds/data_part' # Path to partition data
-
-	sample_partitions=$(ls $PM_PATH'.'* | grep .rds | shuf | tail -$VIF_SAMPLES)
-	echo $sample_partitions
-	Rscript $WORKDIR'/090_scripts/variance_inflation_factor.R' ${#VIF_CHECK[@]} ${VIF_CHECK[@]} $sample_partitions
-	
-#perform vif and warn!
-#print if vif high
-#	confirmVIF=TRUE # If independent variables highly correlated accoding to VIF, stop to confirm
-fi
 
 if [ $SPLITGLS == TRUE ] ; then
 
-	#filter; only use subset of the partitions
-	# Use ls to get all files and save them in a variable
-	#ls $WORKDIR/011_data/parts/data/global/rds/ > $WORKDIR/011_data/parts/data/global/filelist.txt
-	
-	#file_list=$(ls $WORKDIR/011_data/parts/data/global/rds/)
-
-	parallel -a $WORKDIR/011_data/parts/data/global/filelist.txt -j 20 Rscript $WORKDIR'/090_scripts/parts_split_gls.R' $WORKDIR'/011_data/parts/data/global/rds/' $WORKDIR'/011_data/parts/alls_spcors_abs.txt' $WORKDIR'/011_data/parts/alls_nuggets.txt' $WORKDIR'/011_data/parts/gls_split/' {}
-	
-	#delete
-	Rscript '/data/FS_human_footprint/090_scripts/parts_split_gls.R' '/data/FS_human_footprint/011_data/parts/data/global/rds/' '/data/FS_human_footprint/011_data/parts/alls_spcors_abs.txt' '/data/FS_human_footprint/011_data/parts/alls_nuggets.txt' '/data/FS_human_footprint/011_data/parts/gls_split_test/' 'data_part.1062607.rds'
-	
-	#parallel -j 20 Rscript $WORKDIR'/090_scripts/parts_split_gls.R' $WORKDIR'/011_data/parts/data/global/rds/' $WORKDIR'/011_data/parts/alls_spcors_abs.txt' $WORKDIR'/011_data/parts/alls_nuggets.txt' $WORKDIR'/011_data/parts/gls_split/' $WORKDIR'/011_data/parts/intermediate/' ::: "${file_list[@]}"
-	
-	#Rscript $WORKDIR'/090_scripts/parts_split_gls.R' $WORKDIR'/011_data/parts/data/global/rds/' $WORKDIR'/011_data/parts/alls_spcors_abs.txt' $WORKDIR'/011_data/parts/alls_nuggets.txt' $WORKDIR'/011_data/parts/gls_split/' 'data_part.1062607.rds'
+	if [ "$CASE_NAME" != "global" ]; then # continental case
+		mapfile -t lines < $WORKDIR'/011_data/hii/v1/merged_ar_ind/'$CASE_NAME'/categories.txt'
+		for line in "${lines[@]}"; do
+			
+			echo "Processing line: $line"
+			if [ "$PARTITIONS" != 0 ]; then
+				ls -p $WORKDIR/011_data/parts/data/$CASE_NAME'_'$line'/rds/' | grep -v / | shuf | head -n $PARTITIONS > $WORKDIR/011_data/parts/data/$CASE_NAME'_'$line/filelist.txt
+				
+			else
+				ls $WORKDIR/011_data/parts/data/$CASE_NAME'_'$line/rds/ > $WORKDIR/011_data/parts/data/$CASE_NAME'_'$line'/filelist.txt'
+			fi
+			
+			parallel -a $WORKDIR/011_data/parts/data/$CASE_NAME'_'$line/filelist.txt -j $jbs Rscript $WORKDIR'/090_scripts/parts_split_gls.R' $WORKDIR'/011_data/parts/data/'$CASE_NAME'_'$line'/rds/' $WORKDIR'/011_data/parts/alls_spcors_abs.txt' $WORKDIR'/011_data/parts/alls_nuggets.txt' $WORKDIR'/011_data/parts/gls_split/'$CASE_NAME'_'$line'_'$FORMID'/' $FORMULA $FORMULA0 {}
+		done
+		
+	else # global case
+		if [ "$PARTITIONS" != 0 ]; then
+			ls -p $WORKDIR/011_data/parts/data/$CASE_NAME/rds/ | grep -v / | shuf | head -n $PARTITIONS > $WORKDIR/011_data/parts/data/$CASE_NAME/filelist.txt
+		else
+			ls $WORKDIR/011_data/parts/data/$CASE_NAME/rds/ > $WORKDIR/011_data/parts/data/$CASE_NAME/filelist.txt
+		fi
+		
+		parallel -a $WORKDIR/011_data/parts/data/$CASE_NAME/filelist.txt -j $jbs Rscript $WORKDIR'/090_scripts/parts_split_gls.R' $WORKDIR'/011_data/parts/data/'$CASE_NAME'/rds/' $WORKDIR'/011_data/parts/alls_spcors_abs.txt' $WORKDIR'/011_data/parts/alls_nuggets.txt' $WORKDIR'/011_data/parts/gls_split/'$CASE_NAME'/' $FORMULA $FORMULA0 {}
+	fi
 fi
 
-
 if [ $SPLITCROSS == TRUE ] ; then
-
-	## Randomly select nfiles*2 pairs of GLS results
-	NCROSSFILES=20 # Desired pairs / 2
 	
 	if [ "$CASE_NAME" != "global" ]; then # continental case
 		mapfile -t lines < $WORKDIR'/011_data/hii/v1/merged_ar_ind/'$CASE_NAME'/categories.txt'
 		for line in "${lines[@]}"; do
 		
 			echo "Processing line: $line"
-			folder=$WORKDIR'/011_data/parts/gls_split/'$CASE_NAME'_'$line'_'$FORMID'/'
-			output_file=$WORKDIR'/011_data/parts/gls_cross/'$CASE_NAME'_'$line'_'$FORMID'.txt'
+			#folder=$WORKDIR'/011_data/parts/gls_split/'$CASE_NAME'_'$line'_'$FORMID'/'
+			folder=$WORKDIR'/011_data/parts/gls_split/'$CASE_NAME'_'$line'/'
+			#output_file=$WORKDIR'/011_data/parts/gls_cross/'$CASE_NAME'_'$line'_'$FORMID'.txt'
+			output_file=$WORKDIR'/011_data/parts/gls_cross/'$CASE_NAME'_'$line'.txt'
 			echo $folder
 			echo $output_file
 			
@@ -370,8 +374,9 @@ if [ $SPLITCROSS == TRUE ] ; then
 				fi
 			done
 			
-			parallel -a $output_file -j $jbs Rscript $WORKDIR'/090_scripts/parts_split_cross.R' $WORKDIR'/011_data/parts/gls_split/'$CASE_NAME'_'$line'_'$FORMID'/' {} $WORKDIR'/011_data/parts/data/'$CASE_NAME'_'$line'/rds/' $WORKDIR'/011_data/parts/gls_cross/'$CASE_NAME'_'$line'_'$FORMID'/' $WORKDIR'/011_data/parts/alls_spcors_abs.txt'
-
+			#parallel -a $output_file -j $jbs Rscript $WORKDIR'/090_scripts/parts_split_cross.R' $WORKDIR'/011_data/parts/gls_split/'$CASE_NAME'_'$line'_'$FORMID'/' {} $WORKDIR'/011_data/parts/data/'$CASE_NAME'_'$line'/rds/' $WORKDIR'/011_data/parts/gls_cross/'$CASE_NAME'_'$line'_'$FORMID'/' $WORKDIR'/011_data/parts/alls_spcors_abs.txt'
+			parallel -a $output_file -j $jbs Rscript $WORKDIR'/090_scripts/parts_split_cross.R' $WORKDIR'/011_data/parts/gls_split/'$CASE_NAME'_'$line'/' {} $WORKDIR'/011_data/parts/data/'$CASE_NAME'_'$line'/rds/' $WORKDIR'/011_data/parts/gls_cross/'$CASE_NAME'_'$line'/' $WORKDIR'/011_data/parts/alls_spcors_abs.txt'
+			
 		done
 		
 	else # global case
@@ -403,22 +408,26 @@ if [ $SPLITCROSS == TRUE ] ; then
 	fi
 fi
 
-
 if [ $SPLITANALYSIS == TRUE ] ; then
 	
-	#SUBSET_GLS=15000
 	SUBSET_GLS=15000
-	#SUBSET_PAIRS=( 10 20 30 40 50 60 70 80 90 100 150 200 250 ) 
-	SUBSET_PAIRS=50
+	SUBSET_PAIRS=20
 	
-	#parallel -j $jbs Rscript $WORKDIR'/090_scripts/parts_split_analysis.R' '/data/FS_human_footprint/011_data/parts/gls_split/' '/data/FS_human_footprint/011_data/parts/gls_cross/global/' '/data/FS_human_footprint/011_data/parts/gls_analysis/out_global' $SUBSET_GLS ::: "${SUBSET_PAIRS[@]}"
-	Rscript $WORKDIR'/090_scripts/parts_split_analysis.R' '/data/FS_human_footprint/011_data/parts/gls_split/' '/data/FS_human_footprint/011_data/parts/gls_cross/global/' '/data/FS_human_footprint/011_data/parts/gls_analysis/out_global' $SUBSET_GLS $SUBSET_PAIRS
+	#Rscript $WORKDIR'/090_scripts/parts_split_analysis.R' $WORKDIR'/011_data/parts/gls_split/'$CASE_NAME'_6/' $WORKDIR'/011_data/parts/gls_cross/'$CASE_NAME'_6/' $WORKDIR'/011_data/parts/gls_analysis/out_'$CASE_NAME'_6' $SUBSET_GLS $SUBSET_PAIRS
+	if [ "$CASE_NAME" != "global" ]; then # continental case
+		mapfile -t lines < $WORKDIR'/011_data/hii/v1/merged_ar_ind/'$CASE_NAME'/categories.txt'
+		for line in "${lines[@]}"; do
 	
-	#Rscript '/data/FS_human_footprint/090_scripts/parts_split_analysis.R' '/data/FS_human_footprint/011_data/parts/gls_split/' '/data/FS_human_footprint/011_data/parts/gls_cross/global/' '/data/FS_human_footprint/011_data/parts/gls_analysis/out_global' $SUBSET_GLS $SUBSET_PAIRS
+	#Rscript '/data/FS_human_footprint/090_scripts/parts_split_analysis.R' '/data/FS_human_footprint/011_data/parts/gls_split/' '/data/FS_human_footprint/011_data/parts/gls_cross/global/' '/data/FS_human_footprint/011_data/parts/gls_analysis/out_global.rds' $SUBSET_GLS $SUBSET_PAIRS
+			Rscript $WORKDIR'/090_scripts/parts_split_analysis.R' $WORKDIR'/011_data/parts/gls_split/'$CASE_NAME'_'$line'/' $WORKDIR'/011_data/parts/gls_cross/'$CASE_NAME'_'$line'/' $WORKDIR'/011_data/parts/gls_analysis/out_'$CASE_NAME'_'$line $SUBSET_GLS $SUBSET_PAIRS
+		done
+	fi
+#	  gls_inDir = args[1]
+#  cross_inDir = args[2]
+#  outPath = args[3]
+#  subset_gls = as.numeric(args[4])
+#  subset_pairs = as.numeric(args[5])
+	#use reference levels file
+	#Rscript '/data/FS_human_footprint/090_scripts/parts_split_analysis.R' '/data/FS_human_footprint/011_data/parts/gls_split/continental_2_ecobiocnt/' '/data/FS_human_footprint/011_data/parts/gls_cross/continental_2_ecobiocnt/' '/data/FS_human_footprint/011_data/parts/gls_analysis/test.rds' '/data/FS_human_footprint/011_data/parts/gls_analysis/levels_reference.txt' 1 0
 	
 fi
-
-
-		
-#- output correlation matrix, variance inflation factor test. then select!
-# write vif new - with subset of the data
