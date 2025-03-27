@@ -43,6 +43,8 @@ SPLIT_BY_CAT=TRUE
 
 ## Generate partition matrix
 PARTITIONMATRIX=FALSE
+PARTSIZE=2000
+COLPERPART=8000
 WRITE_OPT_CSV=ALL #ALL, TEST, NONE
 
 ## Split data into randomized partitions following the partition matrix
@@ -58,7 +60,7 @@ FORMID='wdpaprox' # For model id in file structure, e.g., '' for intercept-only
 
 ## Perform GLS cross comparisons
 SPLITCROSS=FALSE
-NCROSSFILES=20
+NCROSSFILES=20  # Desired pairs / 2
 
 ## Analyse and merge split GLS results
 SPLITANALYSIS=FALSE
@@ -248,10 +250,7 @@ if [ $FILTER == TRUE ] ; then
 fi
 
 if [ $PARTITIONMATRIX == TRUE ] ; then
-	
-	partition_size=2000
-	max_col_per_part=8000
-	
+		
 	# If multiple categories (continents)
 	if [ "$CASE_NAME" != "global" ]; then
 		mapfile -t lines < $WORKDIR'/011_data/hii/v1/merged_ar_ind/'$CASE_NAME'/categories.txt'
@@ -263,7 +262,7 @@ if [ $PARTITIONMATRIX == TRUE ] ; then
 			num_lines=$(wc -l < "$file_path")
 			
 			echo $num_lines
-			Rscript $WORKDIR'/090_scripts/parts_generate_pm.R' $num_lines $pm_path $partition_size $max_col_per_part
+			Rscript $WORKDIR'/090_scripts/parts_generate_pm.R' $num_lines $pm_path $PARTSIZE $COLPERPART
 		done
 
 	# If only one category (global)
@@ -273,7 +272,7 @@ if [ $PARTITIONMATRIX == TRUE ] ; then
 		num_lines=$(wc -l < "$file_path")
 		
 		echo $num_lines
-		Rscript $WORKDIR'/090_scripts/parts_generate_pm.R' $num_lines $pm_path $partition_size $max_col_per_part
+		Rscript $WORKDIR'/090_scripts/parts_generate_pm.R' $num_lines $pm_path $PARTSIZE $COLPERPART
 	fi
 
 fi
@@ -341,9 +340,6 @@ if [ $SPLITGLS == TRUE ] ; then
 fi
 
 if [ $SPLITCROSS == TRUE ] ; then
-
-	## Randomly select nfiles*2 pairs of GLS results
-	NCROSSFILES=20 # Desired pairs / 2
 	
 	if [ "$CASE_NAME" != "global" ]; then # continental case
 		mapfile -t lines < $WORKDIR'/011_data/hii/v1/merged_ar_ind/'$CASE_NAME'/categories.txt'
@@ -376,7 +372,7 @@ if [ $SPLITCROSS == TRUE ] ; then
 			done
 			
 			parallel -a $output_file -j $jbs Rscript $WORKDIR'/090_scripts/parts_split_cross.R' $WORKDIR'/011_data/parts/gls_split/'$CASE_NAME'_'$line'_'$FORMID'/' {} $WORKDIR'/011_data/parts/data/'$CASE_NAME'_'$line'/rds/' $WORKDIR'/011_data/parts/gls_cross/'$CASE_NAME'_'$line'_'$FORMID'/' $WORKDIR'/011_data/parts/alls_spcors_abs.txt'
-
+			
 		done
 		
 	else # global case
