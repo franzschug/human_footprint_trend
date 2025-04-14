@@ -64,6 +64,14 @@ dist.f <- match.fun(distm_FUN)
 partition_data$biomes <- as.factor(partition_data$biomes)
 partition_data$ecoregions <- as.factor(partition_data$ecoregions)
 partition_data$countries <- as.factor(partition_data$countries)
+#-32769
+
+# Reclassify the values in the 'values' column using direct indexing
+partition_data$wdpa_categories[partition_data$wdpa_categories == 0] <- 0
+partition_data$wdpa_categories[partition_data$wdpa_categories >= 1 & partition_data$wdpa_categories <= 4] <- 1
+partition_data$wdpa_categories[partition_data$wdpa_categories == -32768] <- 0
+
+partition_data$wdpa_categories <- as.factor(partition_data$wdpa_categories)
 #print(partition_data)
 
 
@@ -93,6 +101,6 @@ glsObj$xx =partGLS$xx
 glsObj$xx0 =partGLS$xx0 
 
 print(Sys.time() - START_TIME)
-	
+
 saveRDS(glsObj, file = partGLS_savepath)
 quit()
