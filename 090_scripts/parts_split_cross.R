@@ -8,6 +8,7 @@
 library(remotePARTS)
 
 args = commandArgs(trailingOnly=TRUE)
+print(args)
 
 # test for arguments
 if (length(args)!=5) {
@@ -19,7 +20,6 @@ if (length(args)!=5) {
   cross_outdir = args[4]
   range_path = args[5]
 }
-
 splitfiles <- strsplit(files, " ")[[1]]
 
 file1 <- splitfiles[1]
@@ -141,7 +141,7 @@ if (is.null(gls_2$invcholV)){
   gls_2$invcholV <- invert_chol(Vj)
 }	  
 
-print((gls_1$xx))
+#print((gls_1$xx))
 print(ncol(gls_1$xx))
 print(ncol(gls_1$xx0))
 print(ncol(gls_2$xx))
@@ -155,5 +155,5 @@ rSSE = rGLS$rSSEij
 outCross = list(rcoef = rcoef, rSSR = rSSR, rSSE = rSSE, partsize = partsize, dfs = dfs)
 #print(outCross)
 
-#saveRDS(outCross, file = cross_savepath)
+saveRDS(outCross, file = cross_savepath)
 quit()
