@@ -1,6 +1,6 @@
 #!/bin/bash
 
-jbs=10
+jbs=40
 
 ## Working directory
 WORKDIR='/data/FS_human_footprint'
@@ -54,17 +54,23 @@ WRITE_OPT_CSV=ALL #ALL, TEST, NONE
 ## Perform split GLS
 SPLITGLS=FALSE
 PARTITIONS=15000 # Use a subset of partitions. 0 = Use all partitions.
-FORMULA='coeff~1+wdpa_prox+wdpa_prox*ecoregions' # e.g., 'coeff ~ 1', 'coeff~1+ecoregions+biomes+countries', 'coeff~1+wdpa_prox+wdpa_prox*ecoregions', 'coeff~1+wdpa_categories', 'coeff~1+wdpa_prox*ecoregions'
+FORMULA='coeff~1+ecoregions' # e.g., 'coeff ~ 1', 'coeff~1+ecoregions+biomes+countries', 'coeff~1+wdpa_prox+wdpa_prox*ecoregions', 'coeff~1+wdpa_categories'
+#FORMULA='coeff~1+wdpa_categories*biomes' # e.g., 'coeff ~ 1', 'coeff~1+ecoregions+biomes+countries', 'coeff~1+wdpa_prox+wdpa_prox*ecoregions', 'coeff~1+wdpa_categories'
 FORMULA0='coeff~1' # e.g., 'coeff ~ 1'
-#FORMID='wdpaprox' # For model id in file structure, e.g., '' for intercept-only
-FORMID='' # For model id in file structure, e.g., '' for intercept-only
+FORMID='ecobiocnt' # For model id in file structure, e.g., '' for intercept-only, 'wdpacat', 'wdpaprox', 'wdpacat_biomes', 'ecobiocnt'
+
+### Filter for only shared explanatory variables
+FILTERSHARED=FALSE
 
 ## Perform GLS cross comparisons
 SPLITCROSS=FALSE
-NCROSSFILES=20  # Desired pairs / 2
+NCROSSFILES=100  # Desired pairs / 2
+USEFILTERED=TRUE
 
 ## Analyse and merge split GLS results
 SPLITANALYSIS=TRUE
+SUBSET_GLS=10
+SUBSET_PAIRS=10
 
 
 
@@ -340,6 +346,17 @@ if [ $SPLITGLS == TRUE ] ; then
 	fi
 fi
 
+if [ $FILTERSHARED == TRUE ] ; then
+	mapfile -t lines < $WORKDIR'/011_data/hii/v1/merged_ar_ind/'$CASE_NAME'/categories.txt'
+	for line in "${lines[@]}"; do
+			
+		echo "Processing line: $line"
+			
+		Rscript $WORKDIR'/090_scripts/filter_gls_split_results.R' $WORKDIR'/011_data/parts/gls_split/'$CASE_NAME'_'$line'_'$FORMID'/' $WORKDIR'/011_data/parts/gls_split/'$CASE_NAME'_'$line'_'$FORMID'_filtered'
+	done
+fi
+
+
 if [ $SPLITCROSS == TRUE ] ; then
 	
 	if [ "$CASE_NAME" != "global" ]; then # continental case
@@ -347,10 +364,14 @@ if [ $SPLITCROSS == TRUE ] ; then
 		for line in "${lines[@]}"; do
 		
 			echo "Processing line: $line"
-			#folder=$WORKDIR'/011_data/parts/gls_split/'$CASE_NAME'_'$line'_'$FORMID'/'
-			folder=$WORKDIR'/011_data/parts/gls_split/'$CASE_NAME'_'$line'/'
-			#output_file=$WORKDIR'/011_data/parts/gls_cross/'$CASE_NAME'_'$line'_'$FORMID'.txt'
-			output_file=$WORKDIR'/011_data/parts/gls_cross/'$CASE_NAME'_'$line'.txt'
+			if [ $USEFILTERED == TRUE ]; then 
+				folder=$WORKDIR'/011_data/parts/gls_split/'$CASE_NAME'_'$line'_'$FORMID'_filtered/'
+				output_file=$WORKDIR'/011_data/parts/gls_cross/'$CASE_NAME'_'$line'_'$FORMID'_filtered.txt'
+			else
+				folder=$WORKDIR'/011_data/parts/gls_split/'$CASE_NAME'_'$line'_'$FORMID'/'
+				output_file=$WORKDIR'/011_data/parts/gls_cross/'$CASE_NAME'_'$line'_'$FORMID'.txt'
+			fi
+			
 			echo $folder
 			echo $output_file
 			
@@ -374,8 +395,11 @@ if [ $SPLITCROSS == TRUE ] ; then
 				fi
 			done
 			
-			#parallel -a $output_file -j $jbs Rscript $WORKDIR'/090_scripts/parts_split_cross.R' $WORKDIR'/011_data/parts/gls_split/'$CASE_NAME'_'$line'_'$FORMID'/' {} $WORKDIR'/011_data/parts/data/'$CASE_NAME'_'$line'/rds/' $WORKDIR'/011_data/parts/gls_cross/'$CASE_NAME'_'$line'_'$FORMID'/' $WORKDIR'/011_data/parts/alls_spcors_abs.txt'
-			parallel -a $output_file -j $jbs Rscript $WORKDIR'/090_scripts/parts_split_cross.R' $WORKDIR'/011_data/parts/gls_split/'$CASE_NAME'_'$line'/' {} $WORKDIR'/011_data/parts/data/'$CASE_NAME'_'$line'/rds/' $WORKDIR'/011_data/parts/gls_cross/'$CASE_NAME'_'$line'/' $WORKDIR'/011_data/parts/alls_spcors_abs.txt'
+			if [ $USEFILTERED == TRUE ]; then 
+				parallel -a $output_file -j $jbs Rscript $WORKDIR'/090_scripts/parts_split_cross.R' $WORKDIR'/011_data/parts/gls_split/'$CASE_NAME'_'$line'_'$FORMID'_filtered/' {} $WORKDIR'/011_data/parts/data/'$CASE_NAME'_'$line'/rds/' $WORKDIR'/011_data/parts/gls_cross/'$CASE_NAME'_'$line'_'$FORMID'_filtered/' $WORKDIR'/011_data/parts/alls_spcors_abs.txt'
+			else
+				parallel -a $output_file -j $jbs Rscript $WORKDIR'/090_scripts/parts_split_cross.R' $WORKDIR'/011_data/parts/gls_split/'$CASE_NAME'_'$line'_'$FORMID'/' {} $WORKDIR'/011_data/parts/data/'$CASE_NAME'_'$line'/rds/' $WORKDIR'/011_data/parts/gls_cross/'$CASE_NAME'_'$line'_'$FORMID'/' $WORKDIR'/011_data/parts/alls_spcors_abs.txt'
+			fi
 			
 		done
 		
@@ -410,24 +434,23 @@ fi
 
 if [ $SPLITANALYSIS == TRUE ] ; then
 	
-	SUBSET_GLS=15000
-	SUBSET_PAIRS=20
-	
-	#Rscript $WORKDIR'/090_scripts/parts_split_analysis.R' $WORKDIR'/011_data/parts/gls_split/'$CASE_NAME'_6/' $WORKDIR'/011_data/parts/gls_cross/'$CASE_NAME'_6/' $WORKDIR'/011_data/parts/gls_analysis/out_'$CASE_NAME'_6' $SUBSET_GLS $SUBSET_PAIRS
 	if [ "$CASE_NAME" != "global" ]; then # continental case
 		mapfile -t lines < $WORKDIR'/011_data/hii/v1/merged_ar_ind/'$CASE_NAME'/categories.txt'
 		for line in "${lines[@]}"; do
-	
-	#Rscript '/data/FS_human_footprint/090_scripts/parts_split_analysis.R' '/data/FS_human_footprint/011_data/parts/gls_split/' '/data/FS_human_footprint/011_data/parts/gls_cross/global/' '/data/FS_human_footprint/011_data/parts/gls_analysis/out_global.rds' $SUBSET_GLS $SUBSET_PAIRS
-			Rscript $WORKDIR'/090_scripts/parts_split_analysis.R' $WORKDIR'/011_data/parts/gls_split/'$CASE_NAME'_'$line'/' $WORKDIR'/011_data/parts/gls_cross/'$CASE_NAME'_'$line'/' $WORKDIR'/011_data/parts/gls_analysis/out_'$CASE_NAME'_'$line $SUBSET_GLS $SUBSET_PAIRS
+			if [ $USEFILTERED == TRUE ]; then 
+				Rscript $WORKDIR'/090_scripts/parts_split_analysis.R' $WORKDIR'/011_data/parts/gls_split/'$CASE_NAME'_'$line'_'$FORMID'_filtered/' $WORKDIR'/011_data/parts/gls_cross/'$CASE_NAME'_'$line'_'$FORMID'_filtered/' $WORKDIR'/011_data/parts/gls_analysis/out_'$CASE_NAME'_'$line'_'$FORMID'_filtered' $SUBSET_GLS $SUBSET_PAIRS
+			else
+				Rscript $WORKDIR'/090_scripts/parts_split_analysis.R' $WORKDIR'/011_data/parts/gls_split/'$CASE_NAME'_'$line'_'$FORMID'/' $WORKDIR'/011_data/parts/gls_cross/'$CASE_NAME'_'$line'_'$FORMID'/' $WORKDIR'/011_data/parts/gls_analysis/out_'$CASE_NAME'_'$line'_'$FORMID $SUBSET_GLS $SUBSET_PAIRS
+			fi
 		done
+	
+	else
+		Rscript $WORKDIR'/090_scripts/parts_split_analysis.R' $WORKDIR'/011_data/parts/gls_split/' '/data/FS_human_footprint/011_data/parts/gls_cross/global/' $WORKDIR'/011_data/parts/gls_analysis/out_global.rds' $SUBSET_GLS $SUBSET_PAIRS
+	
 	fi
-#	  gls_inDir = args[1]
-#  cross_inDir = args[2]
-#  outPath = args[3]
-#  subset_gls = as.numeric(args[4])
-#  subset_pairs = as.numeric(args[5])
 	#use reference levels file
 	#Rscript '/data/FS_human_footprint/090_scripts/parts_split_analysis.R' '/data/FS_human_footprint/011_data/parts/gls_split/continental_2_ecobiocnt/' '/data/FS_human_footprint/011_data/parts/gls_cross/continental_2_ecobiocnt/' '/data/FS_human_footprint/011_data/parts/gls_analysis/test.rds' '/data/FS_human_footprint/011_data/parts/gls_analysis/levels_reference.txt' 1 0
+	
+	
 	
 fi
