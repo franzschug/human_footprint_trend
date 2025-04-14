@@ -1,6 +1,6 @@
 #!/bin/bash
 
-jbs=20
+jbs=40
 
 ## Working directory
 WORKDIR='/data/FS_human_footprint'
@@ -52,12 +52,12 @@ PARTITION=FALSE
 WRITE_OPT_CSV=ALL #ALL, TEST, NONE
 
 ## Perform split GLS
-SPLITGLS=FALSE
+SPLITGLS=TRUE
 PARTITIONS=15000 # Use a subset of partitions. 0 = Use all partitions.
-FORMULA='coeff~1+wdpa_prox+wdpa_prox*ecoregions' # e.g., 'coeff ~ 1', 'coeff~1+ecoregions+biomes+countries', 'coeff~1+wdpa_prox+wdpa_prox*ecoregions', 'coeff~1+wdpa_categories'
-FORMULA='coeff~1+wdpa_categories*biomes' # e.g., 'coeff ~ 1', 'coeff~1+ecoregions+biomes+countries', 'coeff~1+wdpa_prox+wdpa_prox*ecoregions', 'coeff~1+wdpa_categories'
+FORMULA='coeff~1+ecoregions' # e.g., 'coeff ~ 1', 'coeff~1+ecoregions+biomes+countries', 'coeff~1+wdpa_prox+wdpa_prox*ecoregions', 'coeff~1+wdpa_categories'
+#FORMULA='coeff~1+wdpa_categories*biomes' # e.g., 'coeff ~ 1', 'coeff~1+ecoregions+biomes+countries', 'coeff~1+wdpa_prox+wdpa_prox*ecoregions', 'coeff~1+wdpa_categories'
 FORMULA0='coeff~1' # e.g., 'coeff ~ 1'
-FORMID='ecobiocnt' # For model id in file structure, e.g., '' for intercept-only, 'wdpacat', 'wdpaprox', 'wdpacat_biomes', 'ecobiocnt'
+FORMID='ecoregions' # For model id in file structure, e.g., '' for intercept-only, 'wdpacat', 'wdpaprox', 'wdpacat_biomes', 'ecobiocnt'
 
 ### Filter for only shared explanatory variables
 FILTERSHARED=FALSE
@@ -68,7 +68,7 @@ NCROSSFILES=100  # Desired pairs / 2
 USEFILTERED=TRUE
 
 ## Analyse and merge split GLS results
-SPLITANALYSIS=TRUE
+SPLITANALYSIS=FALSE
 SUBSET_GLS=14000
 SUBSET_PAIRS=10
 
